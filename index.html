@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#08111e">
 <title>VOID VOYAGE — The Dark Trails | Vertical Slice</title>
+<!-- VOID VOYAGE v6: single authoritative game/UI/network script -->
 <style>
 :root{--bg:#07101b;--panel:#0b1726eF;--panel2:#0e1c2ee8;--text:#edf7ff;--muted:#9ab0c6;--line:#23405c;--cyan:#58e1ff;--violet:#a98cff;--hot:#ff3d9b;--green:#63f0bd;--warn:#ffc65c;--danger:#ff607e;}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -104,18 +105,14 @@ const HEROES={
 const HERO_KEYS=Object.keys(HEROES);
 const state={role:null,room:'',peer:null,connections:new Map(),selfId:'',hero:'ninja',name:'Voyager',started:false,selectedHero:'ninja',localInput:{mx:0,my:0,yaw:0,primary:false,secondary:false,signature:false,ultimate:false,relay:false,tune:false,revive:false,sprint:false},lastSent:0,seq:0,ready:false,hostState:null,remotePlayers:{}};
 
-const els={lobby:gid('lobby'),heroSelect:gid('heroSelect'),hud:gid('hud'),create:gid('createBtn'),join:gid('joinBtn'),name:gid('name'),roomInput:gid('roomInput'),roomLine:gid('roomLine'),roomCode:gid('roomCode'),status:gid('lobbyStatus'),heroCards:gid('heroCards'),ready:gid('readyBtn'),heroStatus:gid('heroStatus'),rosterCount:gid('rosterCount'),heroRoomCode:gid('heroRoomCode'),roomHudCode:gid('roomHudCode'),party:gid('party'),objectiveTitle:gid('objectiveTitle'),objectiveText:gid('objectiveText'),freqText:gid('freqText'),multText:gid('multText'),heatText:gid('heatText'),stabilityFill:gid('stabilityFill'),stabilityText:gid('stabilityText'),boss:gid('boss'),bossFill:gid('bossFill'),bossPhase:gid('bossPhase'),toast:gid('toast'),toastTitle:gid('toastTitle'),toastText:gid('toastText'),primaryName:gid('primaryName'),secondaryName:gid('secondaryName'),signatureName:gid('signatureName')};
+const els={lobby:gid('lobby'),heroSelect:gid('heroSelect'),hud:gid('hud'),create:gid('createBtn'),join:gid('joinBtn'),name:gid('name'),roomInput:gid('roomInput'),roomLine:gid('roomLine'),roomCode:gid('roomCode'),status:gid('lobbyStatus'),heroCards:gid('heroCards'),ready:gid('readyBtn'),heroStatus:gid('heroStatus'),heroModeText:gid('heroModeText'),mobile:gid('mobile'),rosterCount:gid('rosterCount'),heroRoomCode:gid('heroRoomCode'),roomHudCode:gid('roomHudCode'),party:gid('party'),objectiveTitle:gid('objectiveTitle'),objectiveText:gid('objectiveText'),freqText:gid('freqText'),multText:gid('multText'),heatText:gid('heatText'),stabilityFill:gid('stabilityFill'),stabilityText:gid('stabilityText'),boss:gid('boss'),bossFill:gid('bossFill'),bossPhase:gid('bossPhase'),toast:gid('toast'),toastTitle:gid('toastTitle'),toastText:gid('toastText'),primaryName:gid('primaryName'),secondaryName:gid('secondaryName'),signatureName:gid('signatureName')};
 function gid(x){return document.getElementById(x)}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function logStatus(s){els.status.textContent=s}
+function setStatus(s){els.status.textContent=s}
 function showToast(t,b,d=2200){els.toastTitle.textContent=t;els.toastText.textContent=b;els.toast.style.display='flex';clearTimeout(showToast.t);showToast.t=setTimeout(()=>els.toast.style.display='none',d)}
 function randCode(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<6;i++)s+=chars[(Math.random()*chars.length)|0];return s}
 function heroTaken(key){return Object.values(state.hostState?.players||{}).some(p=>p.hero===key && p.id!==state.selfId)}
-
-function renderHeroCards(){
-  els.heroCards.innerHTML='';
-  HERO_KEYS.forEach(k=>{const h=HEROES[k],taken=heroTaken(k);const d=document.createElement('div');d.className='card'+(state.selectedHero===k?' selected':'')+(taken?' taken':'');d.dataset.hero=k;d.innerHTML='<div class="pickDot"></div><div class="heroAccent" style="color:'+h.accent+'">'+h.label+'</div><h3>'+h.role.split(' / ')[0]+'</h3><div class="role">'+h.role+'</div><div class="ability"><b>Primary</b> '+h.primary+'<br><b>Secondary</b> '+h.secondary+'<br><b>Signature</b> '+h.signature+'<br><b>Ultimate</b> '+h.ultimate+'</div>'+(taken?'<div class="mini" style="margin-top:7px;color:#ff8ea9">TAKEN</div>':'');d.addEventListener('click',()=>{if(taken)return;state.selectedHero=k;renderHeroCards()});els.heroCards.appendChild(d)})
-}
 
 // --- Three.js scene ---
 let renderer,scene,camera,clock;const actorMeshes=new Map(),enemyMeshes=new Map(),fx=[];let groundY=0;
@@ -147,116 +144,8 @@ function burst(pos,color=0x58e1ff){const mesh=new THREE.Mesh(new THREE.SphereGeo
 
 // --- Host simulation ---
 const HOST={tick:null,broadcast:null,state:null,accum:0,last:0};
-function newGameState(){
-  const s={phase:'lobby',started:false,players:{},enemies:{},plates:[false,false,false],puzzle:false,boss:null,stability:1,combo:1,comboT:0,heat:0,fx:[],message:'Destroy the Fractured Shards.',objective:'Destroy the Fractured Shards. When the resonance nodes are lit, stand on all three plates to open the Arbiter gate.',nextId:1};
-  for(let i=0;i<7;i++){const a=Math.random()*Math.PI*2,r=10+Math.random()*14;const id='S'+i;s.enemies[id]={id,x:Math.cos(a)*r,z:Math.sin(a)*r,hy:0.8,hp:70,maxHp:70,freq:1+(i%4),vulnerable:false,dead:false,t:Math.random()*5}}
-  return s
-}
-function addPlayer(id,name,hero){if(Object.values(HOST.state.players).length>=4)return false;if(Object.values(HOST.state.players).some(p=>p.hero===hero))return false;const idx=Object.keys(HOST.state.players).length;const spawn=[[-10,4],[-7,6],[7,6],[10,4]][idx]||[0,0];const h=HEROES[hero];HOST.state.players[id]={id,name:name||'Voyager',hero,x:spawn[0],y:0,z:spawn[1],yaw:0,hp:h.hp,maxHp:h.hp,downed:false,downT:0,reviveT:0,frequency:1,signatureCD:0,ultimate:0,secondaryCD:0,reviveBoost:0};return true}
-function dist2(a,b){const dx=a.x-b.x,dz=a.z-b.z;return dx*dx+dz*dz}
-function facePoint(p,dist){return {x:p.x-Math.sin(p.yaw)*dist,z:p.z-Math.cos(p.yaw)*dist}}
-function doHit(p,amount,range){let best=null,bd=Infinity;for(const e of Object.values(HOST.state.enemies)){if(e.dead)continue;const d=dist2(p,e);if(d<=range*range&&d<bd){best=e;bd=d}}if(!best)return false;if(best.freq!==p.frequency)return 'shield';best.hp-=amount*HOST.state.combo;HOST.state.combo=Math.min(5,HOST.state.combo+.25);HOST.state.comboT=4;best.vulnerable=true;burst(best, HEROES[p.hero].color);if(best.hp<=0){best.dead=true;HOST.state.heat=Math.min(1,HOST.state.heat+.05)}return true}
-function damageBoss(p,amount){const b=HOST.state.boss;if(!b||b.dead)return false;if(b.freq!==p.frequency)return 'shield';b.hp-=amount*HOST.state.combo;HOST.state.combo=Math.min(5,HOST.state.combo+.4);HOST.state.comboT=4;burst({x:b.x,y:1.5,z:b.z},HEROES[p.hero].color);if(b.hp<=0){b.hp=0;b.dead=true;HOST.state.phase='complete';HOST.state.stability=.15;HOST.state.message='The Arbiter collapses. The crack remains.'}return true}
-function healNear(p,amount,range){Object.values(HOST.state.players).forEach(q=>{if(dist2(p,q)<range*range&&!q.downed)q.hp=Math.min(q.maxHp,q.hp+amount)})}
-function useAction(p,act){
-  const h=p.hero;const hero=HEROES[h];let hit=false;
-  if(act==='primary'){if(HOST.state.boss&&!HOST.state.boss.dead&&p.y<2)hit=damageBoss(p,h==='ninja'?24:h==='prodigy'?22:h==='doctor'?18:20);else hit=doHit(p,h==='ninja'?24:h==='prodigy'?26:h==='doctor'?18:22,h==='prodigy'?16:hero.range)}
-  if(act==='secondary'&&p.secondaryCD<=0){p.secondaryCD=h==='ninja'?.2:h==='prodigy'?7:h==='doctor'?4:6;if(h==='ninja'){const fp=facePoint(p,5);p.x=fp.x;p.z=fp.z;hit=doHit(p,28,5)}else if(h==='prodigy'){let e=Object.values(HOST.state.enemies).find(e=>!e.dead);if(e){e.hp-=22;e.vulnerable=true} }else if(h==='doctor'){healNear(p,35,6);hit=doHit(p,12,3.2)}else{Object.values(HOST.state.enemies).forEach(e=>{if(!e.dead&&dist2(p,e)<49)e.t+=2});hit=true}}
-  if(act==='signature'&&p.signatureCD<=0){p.signatureCD=h==='ninja'?5:h==='prodigy'?6:h==='doctor'?8:7;if(h==='ninja'){const fp=facePoint(p,8);p.x=fp.x;p.z=fp.z;hit=doHit(p,55,6)}else if(h==='prodigy'){Object.values(HOST.state.enemies).forEach(e=>{if(!e.dead&&dist2(p,e)<64){e.x += (e.x-p.x)*.45;e.z += (e.z-p.z)*.45;e.vulnerable=true;e.hp-=34}});hit=true}else if(h==='doctor'){healNear(p,70,8);Object.values(HOST.state.enemies).forEach(e=>{if(!e.dead&&dist2(p,e)<64)e.hp-=28});hit=true}else{Object.values(HOST.state.enemies).forEach(e=>{if(!e.dead&&dist2(p,e)<81){e.t+=5;e.vulnerable=true;e.hp-=26}});hit=true}}
-  if(act==='ultimate'&&p.ultimate>=100){p.ultimate=0;if(h==='ninja'){if(HOST.state.boss&&!HOST.state.boss.dead)damageBoss(p,180);Object.values(HOST.state.enemies).forEach(e=>{if(!e.dead&&dist2(p,e)<144){e.hp-=80;e.vulnerable=true}})}else if(h==='prodigy'){Object.values(HOST.state.enemies).forEach(e=>{if(!e.dead){e.hp-=120;e.vulnerable=true}});if(HOST.state.boss&&!HOST.state.boss.dead)damageBoss(p,160)}else if(h==='doctor'){healNear(p,120,10);HOST.state.stability=Math.min(1,HOST.state.stability+.12);if(HOST.state.boss&&!HOST.state.boss.dead)damageBoss(p,90)}else{Object.values(HOST.state.enemies).forEach(e=>{if(!e.dead){e.t+=12;e.hp-=70;e.vulnerable=true}});if(HOST.state.boss&&!HOST.state.boss.dead)damageBoss(p,140)}hit=true}
-  if(act==='relay'){const alive=Object.values(HOST.state.players).filter(q=>!q.downed);if(alive.length>=2&&HOST.state.heat<.9){HOST.state.heat=Math.min(1,HOST.state.heat+.18);HOST.state.combo=Math.min(5,HOST.state.combo+.8);HOST.state.comboT=6;Object.values(HOST.state.enemies).forEach(e=>{if(!e.dead&&alive.some(q=>dist2(q,e)<144))e.hp-=55*alive.length;e.vulnerable=true});if(HOST.state.boss&&!HOST.state.boss.dead)damageBoss(p,100+alive.length*35);alive.forEach(q=>q.ultimate=Math.min(100,q.ultimate+22));HOST.state.message=alive.length===4?'PERFECT ENTANGLEMENT':'QUANTUM RELAY';hit=true}else{HOST.state.message='Relay needs two living Voyagers and lower heat.'}}
-  if(hit===true && act!=='ultimate')p.ultimate=Math.min(100,p.ultimate+5);
-}
-function simHost(dt){
-  const s=HOST.state;if(!s || !s.started)return;
-  s.elapsed=(s.elapsed||0)+dt;
-  
-  s.comboT=Math.max(0,s.comboT-dt);if(s.comboT===0)s.combo=Math.max(1,s.combo-.6*dt);s.heat=Math.max(0,s.heat-dt*.018);s.stability=Math.max(.05,Math.min(1,s.stability+dt*.005));
-  // Enemy AI.
-  for(const e of Object.values(s.enemies)){if(e.dead)continue;e.t-=dt;if(e.t<=0){e.freq=1+((e.freq)%4);e.t=4+Math.random()*2;e.vulnerable=false}const ps=Object.values(s.players).filter(p=>!p.downed);if(ps.length){let target=ps.reduce((a,b)=>dist2(e,a)<dist2(e,b)?a:b);const d=Math.sqrt(dist2(e,target));if(d>2.3){e.x+=(target.x-e.x)/Math.max(d,.001)*dt*.9;e.z+=(target.z-e.z)/Math.max(d,.001)*dt*.9}else if(Math.random()<dt*.6){target.hp-=8;if(target.hp<=0){target.hp=0;target.downed=true;target.downT=20;s.message=target.name+' entered Fracture State.'}}}}
-  for(const p of Object.values(s.players)){
-    const h=HEROES[p.hero];p.signatureCD=Math.max(0,p.signatureCD-dt);p.secondaryCD=Math.max(0,p.secondaryCD-dt);if(!p.downed){const inp=p.input||{};const sprint=inp.sprint?1.25:1;const len=Math.hypot(inp.mx,inp.my)||1;const mx=inp.mx/len,my=inp.my/len;const cs=Math.cos(p.yaw),sn=Math.sin(p.yaw);p.x+=(sn*mx+cs*my)*h.speed*dt*sprint;p.z+=(cs*mx-sn*my)*h.speed*dt*sprint;p.x=Math.max(-24,Math.min(24,p.x));p.z=Math.max(-20,Math.min(22,p.z));if(inp.tune){p.frequency=p.frequency%4+1;p.input.tune=false;s.message=p.name+' tuned to F'+p.frequency+'.'}if(inp.primary){useAction(p,'primary');p.input.primary=false}if(inp.secondary){useAction(p,'secondary');p.input.secondary=false}if(inp.signature){useAction(p,'signature');p.input.signature=false}if(inp.ultimate){useAction(p,'ultimate');p.input.ultimate=false}if(inp.relay){useAction(p,'relay');p.input.relay=false}
-      if(inp.revive){const near=Object.values(s.players).find(q=>q.id!==p.id&&q.downed&&dist2(p,q)<16);if(near){near.reviveT=(near.reviveT||0)+dt*(h==='doctor'?1.6:1);if(near.reviveT>=2.2){near.downed=false;near.reviveT=0;near.hp=Math.max(45,near.maxHp*.42);s.combo=Math.min(5,s.combo+.5);s.message=near.name+' revived.'}}} }
-    else {p.downT-=dt;p.reviveT=0;if(p.downT<=0){p.downed=false;p.hp=p.maxHp*.5;p.x=0;p.z=0;s.message=p.name+' re-entered the fracture.'}}
-  }
-  // Puzzle plates — all three occupied for 1.5 seconds.
-  if(s.phase==='shards' && Object.values(s.enemies).every(e=>e.dead)){s.phase='puzzle';s.message='The resonance nodes are live. Hold all three plates at once.';s.objective='Hold all three resonance plates simultaneously. Spread out.'}
-  if(s.phase==='puzzle'){[[ -7,-3],[7,-3],[0,9]].forEach((a,i)=>{s.plates[i]=Object.values(s.players).some(p=>!p.downed&&dist2(p,{x:a[0],z:a[1]})<7)});if(s.plates.every(Boolean)){s.phase='boss';s.puzzle=true;s.boss={x:0,z:7,hp:1200,maxHp:1200,freq:1,phase:1,timer:0,dead:false};s.message='GRAVITY ARBITER ONLINE.';s.objective='Tune to the Arbiter frequency and break its gravity core.';s.stability=.75}}
-  if(s.phase==='boss'&&s.boss&&!s.boss.dead){const b=s.boss;b.timer+=dt;if(b.timer>6){b.timer=0;b.freq=b.freq%4+1;b.phase=b.phase%3+1;s.stability=Math.max(.25,s.stability-.05);s.heat=Math.min(1,s.heat+.04);s.message='Gravity shift. Arbiter resonance F'+b.freq+'.'}Object.values(s.players).forEach(p=>{if(!p.downed&&dist2(p,b)<25&&Math.random()<dt*.12){p.hp-=10;if(p.hp<=0){p.hp=0;p.downed=true;p.downT=20}}})}
-  if(s.phase==='complete'){s.stability=Math.max(.1,s.stability-dt*.01)}
-  // clean enemies that have fallen below zero
-  Object.values(s.enemies).forEach(e=>{if(e.hp<=0)e.dead=true});
-}
-function hostSnapshot(){const s=HOST.state;const clean={started:!!s.started,phase:s.phase,elapsed:s.elapsed||0,players:{},enemies:{},plates:s.plates,puzzle:s.puzzle,boss:s.boss?{x:s.boss.x,z:s.boss.z,hp:s.boss.hp,maxHp:s.boss.maxHp,freq:s.boss.freq,phase:s.boss.phase,dead:s.boss.dead}:null,stability:s.stability,combo:s.combo,heat:s.heat,message:s.message,objective:s.objective};Object.values(s.players).forEach(p=>clean.players[p.id]={...p,input:undefined});Object.values(s.enemies).forEach(e=>clean.enemies[e.id]={...e});return clean}
-function hostBroadcast(){applyAuthoritativeState(hostSnapshot());}
-function beginHost(){if(!HOST.state)HOST.state=newGameState();HOST.last=performance.now();if(HOST.tick)clearInterval(HOST.tick);HOST.tick=setInterval(()=>{const now=performance.now(),dt=Math.min(.06,(now-HOST.last)/1000);HOST.last=now;simHost(dt);hostBroadcast()},50)}
-
-// --- networking ---
-function setupHost(){
-  state.role='host';state.name=els.name.value.trim()||'Voyager';state.room=randCode();state.selectedHero='ninja';state.peer=new Peer(state.room,{config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});els.roomLine.classList.remove('hidden');els.roomCode.textContent=state.room;els.roomHudCode.textContent=state.room;els.roomInput.value=state.room;logStatus('Creating room '+state.room+'…');
-  state.peer.on('open',id=>{state.selfId=id;HOST.state=newGameState();addPlayer(id,state.name,state.selectedHero);beginHost();showHeroSelect(true);logStatus('Room live. Share the code with 1–3 players.');hostBroadcast();});
-  state.peer.on('connection',conn=>{conn.on('open',()=>{state.connections.set(conn.peer,conn);conn.send({t:'welcome',id:conn.peer,room:state.room,roster:hostSnapshot(),host:true})});conn.on('data',msg=>hostData(conn,msg));conn.on('close',()=>{delete HOST.state.players[conn.peer];state.connections.delete(conn.peer);hostBroadcast()});conn.on('error',()=>{})});
-  state.peer.on('error',e=>{logStatus('Peer error: '+e.type+'. Try another room code.');});
-}
-function hostData(conn,msg){if(!HOST.state||!msg)return;if(msg.t==='hello'){const hero=msg.hero;const ok=addPlayer(conn.peer,msg.name,hero);conn.send({t:'welcome',id:conn.peer,room:state.room,roster:hostSnapshot(),host:true,accepted:ok});if(!ok){conn.send({t:'reject',reason:'That hero is taken or the room is full.'});return}hostBroadcast();return}const p=HOST.state.players[conn.peer];if(!p)return;if(msg.t==='input'){p.input=Object.assign(p.input||{},msg.input||{});p.yaw=Number(msg.input?.yaw)||p.yaw}else if(msg.t==='hero'&&!HOST.state.started){if(!Object.values(HOST.state.players).some(q=>q.id!==p.id&&q.hero===msg.hero)){p.hero=msg.hero;hostBroadcast()}}else if(msg.t==='ready'){p.ready=!!msg.value;hostBroadcast()}else if(msg.t==='start'&&conn.peer===state.selfId){HOST.state.started=true}}
-function guestJoin(){
-  state.role='guest';state.name=els.name.value.trim()||'Voyager';state.room=els.roomInput.value.trim().toUpperCase();if(!/^[A-Z0-9]{6}$/.test(state.room)){logStatus('Enter a six-character room code.');return}state.peer=new Peer({config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});logStatus('Connecting to room '+state.room+'…');
-  state.peer.on('open',id=>{state.selfId=id;const c=state.peer.connect(state.room,{reliable:true,serialization:'json'});state.connections.set('host',c);c.on('open',()=>{c.send({t:'hello',name:state.name,hero:state.selectedHero})});c.on('data',guestData);c.on('close',()=>showToast('HOST DISCONNECTED','The room authority left the slice.'))});
-  state.peer.on('error',e=>{logStatus('Join failed: '+e.type+'. Check the code and try again.');});
-}
-function guestData(msg){if(!msg)return;if(msg.t==='welcome'){if(msg.accepted===false){logStatus('Room rejected this hero. Pick another.');return}state.hostState=msg.roster;state.room=msg.room||state.room;applyAuthoritativeState(msg.roster);logStatus('Connected to '+state.room+'.');}else if(msg.t==='reject'){logStatus(msg.reason||'Join rejected.')}else if(msg.t==='state'){applyAuthoritativeState(msg.s);}}
-function sendToHost(msg){const c=state.role==='guest'?state.connections.get('host'):null;if(c&&c.open)try{c.send(msg)}catch(e){}}
-
-function showHeroSelect(host){els.lobby.style.display='none';els.heroSelect.style.display='flex';els.hud.style.display='none';els.heroModeText.textContent=host?'Host selection. Once everyone is connected, the host starts the slice.':'Guest selection. Choose an available hero, then ready up.';els.roomCode.textContent=state.room||'------';els.roomHudCode.textContent=state.room||'------';if(els.heroRoomCode)els.heroRoomCode.innerHTML='ROOM <strong>'+esc(state.room||'------')+'</strong>';renderHeroCards();if(!state.peer)return}
-function startGameUI(s){state.started=true;els.lobby.style.display='none';els.heroSelect.style.display='none';els.hud.style.display='block';els.mobile.style.display='block';els.boss.style.display=s.phase==='boss'?'block':'none';updateHud(s);showToast('THE HIMALAYAS','Four signals. One fracture.');}
-function applyAuthoritativeState(s){if(!s)return;state.hostState=s;els.roomCode.textContent=state.room||'------';els.roomHudCode.textContent=state.room||'------';if(els.heroRoomCode)els.heroRoomCode.innerHTML='ROOM <strong>'+esc(state.room||'------')+'</strong>';if(s.started){startGameUI(s)}else if(s.phase==='lobby'){showHeroSelect(state.role==='host')}updateHud(s);}
-function hostStart(){HOST.state.started=true;HOST.state.phase='shards';HOST.state.objective='Destroy the Fractured Shards. When the resonance nodes are lit, stand on all three plates to open the Arbiter gate.';HOST.state.message='Destroy the Fractured Shards.';for(const c of state.connections.values())try{c.send({t:'state',s:hostSnapshot()})}catch(e){}startGameUI(hostSnapshot());}
-function updateHud(s){if(!s)return;const me=s.players?.[state.selfId];els.roomHudCode.textContent=state.room||'------';if(els.heroRoomCode)els.heroRoomCode.innerHTML='ROOM <strong>'+esc(state.room||'------')+'</strong>';els.multText.textContent='×'+Math.max(1,Math.round(s.combo*10)/10).toFixed(1).replace('.0','');els.heatText.textContent='HEAT '+Math.round(s.heat*100)+'%';if(me){els.freqText.textContent=me.frequency;const h=HEROES[me.hero];els.primaryName.textContent=h.primary;els.secondaryName.textContent=h.secondary;els.signatureName.textContent=h.signature;}
-els.stabilityFill.style.width=(s.stability*100)+'%';els.stabilityText.textContent=s.stability>.7?'STABLE':s.stability>.4?'FLICKERING':'COLLAPSE IMMINENT';els.party.innerHTML=Object.values(s.players||{}).map(p=>'<div class="partyRow"><span class="partyDot '+(p.downed?'down':'live')+'"></span><span>'+esc(p.name)+' <span class="mini">'+HEROES[p.hero].label+'</span></span><span class="mini">'+Math.ceil(Math.max(0,p.hp))+'/'+p.maxHp+'</span></div>').join('');els.objectiveText.textContent=s.objective||s.message||'';els.objectiveTitle.textContent=s.phase==='shards'?'THE CRACK — HIMALAYAS':s.phase==='puzzle'?'RESONANCE LOCK':'GRAVITY ARBITER';els.boss.style.display=s.phase==='boss'?'block':'none';if(s.boss){els.bossFill.style.width=(100*s.boss.hp/s.boss.maxHp)+'%';els.bossPhase.textContent='GRAVITY PHASE · '+(s.boss.phase===1?'1G':s.boss.phase===2?'10G':'INVERSION')+' · RESONANCE F'+s.boss.freq}}
-
-els.create.addEventListener('click',()=>{if(!init3D())return;setupHost()});
-els.join.addEventListener('click',()=>{if(!init3D())return;guestJoin();showHeroSelect(false)});
-els.ready.addEventListener('click',()=>{state.hero=state.selectedHero;state.ready=true;els.heroStatus.textContent='Ready as '+HEROES[state.hero].label+'. Waiting for mission start…';if(state.role==='host'){const p=HOST.state.players[state.selfId];p.hero=state.hero;p.ready=true;renderHeroCards();hostBroadcast();if(HOST.state.started)startGameUI(hostSnapshot());else {els.ready.textContent='Start Mission';els.ready.onclick=()=>{hostStart()}}}else{sendToHost({t:'hero',hero:state.hero});sendToHost({t:'ready',value:true})}});
-
-// desktop input
-const keys={};addEventListener('keydown',e=>{if(document.activeElement===els.name||document.activeElement===els.roomInput)return;keys[e.code]=true;if(e.code==='KeyQ')queueAction('tune');if(e.code==='KeyE')queueAction('secondary');if(e.code==='KeyR')queueAction('signature');if(e.code==='KeyX')queueAction('ultimate');if(e.code==='KeyZ')queueAction('relay');if(e.code==='KeyF')state.localInput.revive=true});addEventListener('keyup',e=>keys[e.code]=false);rendererMouse();function rendererMouse(){let drag=false,lastX=0;document.addEventListener('pointerdown',e=>{if(e.target.closest('button,.panel,.heroPanel,input'))return;if(e.pointerType==='mouse'){drag=true;lastX=e.clientX}});document.addEventListener('pointerup',()=>drag=false);document.addEventListener('pointermove',e=>{if(drag&&e.pointerType==='mouse'){const dx=e.clientX-lastX;lastX=e.clientX;state.localInput.yaw-=dx*.008}})}
-function queueAction(a){state.localInput[a]=true}
-if(document.addEventListener){document.addEventListener('pointerdown',e=>{if(e.target && e.target.id==='gameCanvas' && e.pointerType==='mouse' && e.button===0)queueAction('primary')})}
-function updateInput(){if(!state.started)return;let mx=(keys.KeyD?1:0)-(keys.KeyA?1:0),my=(keys.KeyW?1:0)-(keys.KeyS?1:0);state.localInput.mx=mx;state.localInput.my=my;state.localInput.sprint=!!keys.ShiftLeft;state.localInput.primary=!!(keys.Space||keys.ArrowUp);}
-const __inputInterval=setInterval(()=>{updateInput();if(state.role==='guest'){const payload={...state.localInput};state.localInput.primary=false;state.seq++;sendToHost({t:'input',seq:state.seq,input:payload});}else if(state.role==='host'&&HOST.state?.players?.[state.selfId]){HOST.state.players[state.selfId].input=Object.assign(HOST.state.players[state.selfId].input||{},state.localInput);HOST.state.players[state.selfId].yaw=state.localInput.yaw;state.localInput.primary=false}},50);window.__VVInputInterval=__inputInterval;
-
-// HUD ability buttons
-[['aPrimary','primary'],['aSecondary','secondary'],['aSignature','signature'],['aUltimate','ultimate'],['aRelay','relay']].forEach(([id,a])=>gid(id)?.addEventListener('pointerdown',()=>queueAction(a)));
-// Touch joystick and look pad
-function pad(id,kind){const el=gid(id),kn=el.querySelector('.knob');let active=false,cx=0,cy=0;el.addEventListener('pointerdown',e=>{active=true;cx=e.clientX;cy=e.clientY;el.setPointerCapture(e.pointerId)});el.addEventListener('pointermove',e=>{if(!active)return;const dx=e.clientX-cx,dy=e.clientY-cy,len=Math.min(42,Math.hypot(dx,dy)),ang=Math.atan2(dy,dx);const ox=Math.cos(ang)*len,oy=Math.sin(ang)*len;kn.style.transform='translate('+ox+'px,'+oy+'px)';if(kind==='move'){state.localInput.mx=ox/42;state.localInput.my=-oy/42}else{state.localInput.yaw-=dx*.006;cx=e.clientX}});const end=()=>{active=false;kn.style.transform='translate(0,0)';if(kind==='move'){state.localInput.mx=0;state.localInput.my=0}};el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end)}pad('moveStick','move');pad('lookStick','look');document.querySelectorAll('.mobileBtn').forEach(b=>b.addEventListener('pointerdown',()=>queueAction(b.dataset.act)));
-
-// join hero selection hot-refresh
-const __heroRefreshInterval=setInterval(()=>{if(els.heroSelect.style.display==='flex'){renderHeroCards();els.rosterCount.textContent=Object.keys(state.hostState?.players||HOST.state?.players||{}).length+' / 4';}},600);window.__VVHeroRefreshInterval=__heroRefreshInterval;
-
-// pre-start guest hero selection must send changes
-const oldRender=renderHeroCards;
-
-if(!init3D()){/* Libraries may be unavailable in an isolated preview; the file remains GitHub Pages-ready. */} window.__VV={state,HOST,els,HEROES,HERO_KEYS,scene,camera,renderer,init3D};
-})();
-</script>
-<script>
-(function(){
-'use strict';
-
-const V=window.__VV;
-if(!V)return;
-if(window.__VVInputInterval)clearInterval(window.__VVInputInterval);
-if(window.__VVHeroRefreshInterval)clearInterval(window.__VVHeroRefreshInterval);
-
-const {state,HOST,HEROES,HERO_KEYS,scene,camera}=V;
 const $=id=>document.getElementById(id);
-const ui={
-  lobby:$('lobby'),heroSelect:$('heroSelect'),hud:$('hud'),create:$('createBtn'),join:$('joinBtn'),name:$('name'),roomInput:$('roomInput'),
-  roomLine:$('roomLine'),roomCode:$('roomCode'),status:$('lobbyStatus'),heroCards:$('heroCards'),ready:$('readyBtn'),heroStatus:$('heroStatus'),
-  rosterCount:$('rosterCount'),party:$('party'),objectiveTitle:$('objectiveTitle'),objectiveText:$('objectiveText'),freqText:$('freqText'),
-  multText:$('multText'),heatText:$('heatText'),stabilityFill:$('stabilityFill'),stabilityText:$('stabilityText'),boss:$('boss'),bossFill:$('bossFill'),
-  bossPhase:$('bossPhase'),mobile:$('mobile')
-};
+const ui=els;
 
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function setStatus(s){ui.status.textContent=s}
@@ -264,9 +153,7 @@ function code(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let o='';for(let 
 function clockNow(){return performance.now()/1000}
 function dist2(a,b){return (a.x-b.x)**2+(a.z-b.z)**2}
 function inRange(a,b,r){return dist2(a,b)<=r*r}
-function cloneButton(el){const n=el.cloneNode(true);el.replaceWith(n);return n}
 
-ui.create=cloneButton(ui.create);ui.join=cloneButton(ui.join);ui.ready=cloneButton(ui.ready);
 
 const matchHud=document.createElement('div');
 matchHud.id='vvMatchHud';
@@ -469,13 +356,13 @@ function tick(dt){
 function compact(){
   const s=HOST.state;return{phase:s.phase,started:s.started,elapsed:s.elapsed,stability:s.stability,score:s.score,multiplier:s.multiplier,heat:s.heat,kills:s.kills,revives:s.revives,timeBonus:s.timeBonus,objective:s.objective,message:s.message,wave:s.wave,waveTotal:s.waveTotal,plates:[...s.plates],plateIndex:s.plateIndex,plateCharge:s.plateCharge,over:s.over,result:s.result,players:Object.fromEntries(Object.values(s.players).map(p=>[p.id,{...p,input:undefined}])),enemies:Object.fromEntries(Object.values(s.enemies).map(e=>[e.id,{...e}])),boss:s.boss?{...s.boss}:null}}
 function send(c,m){try{if(c?.open)c.send(m)}catch(e){}}
-function broadcast(){const s=compact();state.hostState=s;for(const c of Object.values(HOST.conns||{}))send(c,{t:'state',s});render(s)}
+function broadcast(){const s=compact();state.hostState=s;for(const c of Object.values(HOST.conns||{}))send(c,{t:'state',s});render(s);if(ui.heroSelect.style.display==='flex'&&!s.started)renderSelect()}
 function showGameEnd(kind){state.started=false;broadcast();updateEnd(kind,compact())}
 function resetRunKeepRoster(){const roster=Object.values(HOST.state.players).map(p=>({id:p.id,name:p.name.replace(/ AI$/,''),hero:p.hero,bot:p.bot}));clearWorld();HOST.state=freshState();HOST.conns=HOST.conns||{};for(const r of roster)addPlayer(r.id,r.name,r.hero,{bot:r.bot});HOST.state.players[state.selfId].ready=true;startRun()}
 
 function hostData(c,m){
   if(!m)return;
-  if(m.t==='hello'){if(Object.keys(HOST.state.players).filter(id=>!HOST.state.players[id].bot).length>=4){send(c,{t:'reject',reason:'Room is full.'});return}const hero=m.hero&&HEROES[m.hero]&&!heroTaken(m.hero)?m.hero:availableHero();addPlayer(c.peer,m.name||'Voyager',hero);HOST.conns[c.peer]=c;c.send({t:'welcome',room:state.room,id:c.peer,hero});broadcast();return}
+  if(m.t==='hello'){if(Object.keys(HOST.state.players).filter(id=>!HOST.state.players[id].bot).length>=4){send(c,{t:'reject',reason:'Room is full.'});return}const hero=m.hero&&HEROES[m.hero]&&!heroTaken(m.hero)?m.hero:availableHero();addPlayer(c.peer,m.name||'Voyager',hero);HOST.conns[c.peer]=c;send(c,{t:'welcome',room:state.room,id:c.peer,hero,roster:compact()});broadcast();return}
   const p=HOST.state.players[c.peer];if(!p)return;
   if(m.t==='input'&&Number(m.seq||0)>=p.lastSeq){p.lastSeq=Number(m.seq||0);p.input=Object.assign(p.input||{},m.input||{});if(m.input?.yaw!==undefined)p.yaw=Number(m.input.yaw)}
   else if(m.t==='hero'&&!HOST.state.started&&HEROES[m.hero]&&!heroTaken(m.hero,p.id))p.hero=m.hero;
@@ -492,12 +379,12 @@ function setupHost(){
 function setupGuest(){
   state.role='guest';state.name=ui.name.value.trim()||'Voyager';state.room=ui.roomInput.value.trim().toUpperCase();if(!/^[A-Z0-9]{6}$/.test(state.room)){setStatus('Enter a six-character room code.');return}
   peer=new Peer({config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});state.peer=peer;
-  peer.on('open',id=>{state.selfId=id;const c=peer.connect(state.room,{reliable:true});hostConn=c;state.connections.set('host',c);c.on('open',()=>{send(c,{t:'hello',name:state.name,hero:state.selectedHero});setStatus('Connected. Choose your hero.')});c.on('data',m=>{if(m.t==='welcome'){openSelect(false)}if(m.t==='state'){state.hostState=m.s;render(m.s);if(m.s.started)showGameUI();if(m.s.over)updateEnd(m.s.result==='win'?'win':'lose',m.s)}});c.on('close',()=>{state.started=false;endTitle.textContent='HOST DISCONNECTED';endSub.textContent='The room authority ended the peer connection.';endStats.innerHTML='';endLayer.classList.remove('hidden');$('vvAgain').style.display='none';$('vvLobby').textContent='CLOSE'})});
+  peer.on('open',id=>{state.selfId=id;const c=peer.connect(state.room,{reliable:true});hostConn=c;state.connections.set('host',c);c.on('open',()=>{send(c,{t:'hello',name:state.name,hero:state.selectedHero});setStatus('Connected. Choose your hero.')});c.on('data',m=>{if(m.t==='welcome'){state.room=m.room||state.room;if(m.hero&&HEROES[m.hero])state.selectedHero=m.hero;if(m.roster){state.hostState=m.roster;render(m.roster)}openSelect(false)}if(m.t==='state'){state.hostState=m.s;render(m.s);if(!m.s.started&&m.s.phase==='lobby')renderSelect();if(m.s.started)showGameUI();if(m.s.over)updateEnd(m.s.result==='win'?'win':'lose',m.s)}});c.on('close',()=>{state.started=false;endTitle.textContent='HOST DISCONNECTED';endSub.textContent='The room authority ended the peer connection.';endStats.innerHTML='';endLayer.classList.remove('hidden');$('vvAgain').style.display='none';$('vvLobby').textContent='CLOSE'})});
   peer.on('error',e=>setStatus('Join failed: '+e.type+'. Check the code and try again.'));
 }
-function openSelect(host){ui.lobby.style.display='none';ui.heroSelect.style.display='flex';ui.heroStatus.textContent=host?'Host: choose your hero, then start the run.':'Choose an available hero. The host controls the mission start.';renderSelect()}
+function openSelect(host){ui.lobby.style.display='none';ui.heroSelect.style.display='flex';ui.heroStatus.textContent=host?'Host: choose your hero, then start the run.':'Choose an available hero. The host controls the mission start.';ui.roomCode.textContent=state.room||'------';if(ui.heroRoomCode)ui.heroRoomCode.innerHTML='ROOM <strong>'+esc(state.room||'------')+'</strong>';renderSelect()}
 function renderSelect(){
-  const roster=state.hostState?.players||HOST.state.players;ui.rosterCount.textContent=Object.keys(roster||{}).length+' / 4';ui.heroCards.innerHTML='';
+  const roster=state.hostState?.players||HOST.state.players;ui.rosterCount.textContent=Object.keys(roster||{}).length+' / 4';ui.roomCode.textContent=state.room||'------';if(ui.heroRoomCode)ui.heroRoomCode.innerHTML='ROOM <strong>'+esc(state.room||'------')+'</strong>';ui.heroCards.innerHTML='';
   for(const k of HERO_KEYS){const h=HEROES[k],taken=Object.values(roster||{}).some(p=>p.id!==state.selfId&&p.hero===k);const d=document.createElement('div');d.className='card'+(state.selectedHero===k?' selected':'')+(taken?' taken':'');d.innerHTML='<div class="pickDot"></div><div class="heroAccent" style="color:'+h.accent+'">'+h.label+'</div><h3>'+h.role.split(' / ')[0]+'</h3><div class="role">'+h.role+'</div><div class="ability"><b>Primary</b> '+h.primary+'<br><b>Secondary</b> '+h.secondary+'<br><b>Signature</b> '+h.signature+'<br><b>Ultimate</b> '+h.ultimate+'</div>'+(taken?'<div class="mini" style="margin-top:7px;color:#ff8ea9">TAKEN</div>':'');if(!taken)d.addEventListener('click',()=>{state.selectedHero=k;renderSelect()});ui.heroCards.appendChild(d)}
 }
 ui.create.addEventListener('click',setupHost);ui.join.addEventListener('click',setupGuest);
