@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#08111e">
+<title>VOID VOYAGE — The Dark Trails | Vertical Slice</title>
+<style>
+:root{--bg:#07101b;--panel:#0b1726eF;--panel2:#0e1c2ee8;--text:#edf7ff;--muted:#9ab0c6;--line:#23405c;--cyan:#58e1ff;--violet:#a98cff;--hot:#ff3d9b;--green:#63f0bd;--warn:#ffc65c;--danger:#ff607e;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text)}
+body{touch-action:none}
+#app{position:fixed;inset:0;background:#07101b}
+canvas{display:block;width:100%;height:100%}
+.hidden{display:none!important}
+#hud,#lobby,#heroSelect,#toast,#mobile{position:absolute;inset:0;pointer-events:none}
+#lobby{display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(circle at 50% 35%,#10283f99,#050b13e8 70%)}
+.panel{pointer-events:auto;width:min(920px,96vw);background:linear-gradient(180deg,#0e1c2ef4,#07111df4);border:1px solid #294967;border-radius:22px;box-shadow:0 24px 80px #0009;padding:28px}
+.brand{letter-spacing:.18em;font-size:12px;color:var(--cyan);text-transform:uppercase}.title{font-size:clamp(30px,5vw,58px);line-height:.95;margin:9px 0 8px;font-weight:800;letter-spacing:-.04em}.subtitle{color:#b9cada;max-width:720px;line-height:1.5;margin-bottom:22px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}.field input{background:#07111d;border:1px solid var(--line);border-radius:12px;color:var(--text);padding:13px;font:inherit;outline:none}.field input:focus{border-color:var(--cyan)}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.btn{border:1px solid #355a77;background:#10263a;color:var(--text);padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}.btn.primary{background:linear-gradient(135deg,#1a7592,#3b3e8e);border-color:#61dbed}.btn.secondary{background:#0b1827}.btn.danger{border-color:#71354d;color:#ffc0d0}.btn:disabled{opacity:.35;cursor:not-allowed}.hint{font-size:12px;color:var(--muted);margin-top:12px}.roomline{margin-top:14px;padding:12px 14px;border-radius:12px;background:#06101b;border:1px solid #1d384f;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.roomcode{font-size:20px;letter-spacing:.22em;color:var(--cyan);font-weight:800}.status{margin-top:12px;color:#b9cada;min-height:20px;font-size:13px}.tiny{font-size:11px;color:#70869b}
+#heroSelect{display:none;align-items:flex-end;justify-content:center;padding:18px;background:linear-gradient(180deg,#040a12aa 0%,#040a12 100%)}
+.heroPanel{pointer-events:auto;width:min(1040px,96vw);background:linear-gradient(180deg,#0c1927f4,#07101af7);border:1px solid #2c4a64;border-radius:20px;padding:18px;box-shadow:0 24px 90px #000a}.heroHead{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:14px}.heroHead h2{margin:0;font-size:22px}.heroHead p{margin:3px 0 0;color:var(--muted);font-size:12px}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.card{border:1px solid var(--line);border-radius:16px;padding:14px;background:#091523;cursor:pointer;min-height:180px;position:relative;overflow:hidden}.card.selected{border-color:var(--cyan);box-shadow:0 0 0 1px #58e1ff55 inset,0 0 24px #58e1ff1a}.card.taken{opacity:.35}.heroAccent{font-size:11px;text-transform:uppercase;letter-spacing:.12em}.card h3{margin:6px 0 3px}.role{color:var(--muted);font-size:12px}.ability{font-size:11px;color:#c4d6e7;margin-top:10px;line-height:1.55}.pickDot{position:absolute;top:12px;right:12px;width:9px;height:9px;border-radius:50%;background:var(--line)}.selected .pickDot{background:var(--cyan);box-shadow:0 0 12px #58e1ff}.heroFoot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px}.heroFoot .btn{min-width:150px}
+#hud{display:none}.topbar{position:absolute;left:14px;right:14px;top:12px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.hudPanel{background:#07111dcc;border:1px solid #28455e;border-radius:14px;backdrop-filter:blur(9px);box-shadow:0 10px 30px #0006}.stability{min-width:min(380px,52vw);padding:10px 12px}.hudLabel{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8ca5bc}.meter{height:8px;border-radius:99px;background:#122235;overflow:hidden;margin-top:7px}.meter span{display:block;height:100%;width:30%;background:linear-gradient(90deg,#58e1ff,#a98cff,#ff3d9b);box-shadow:0 0 12px #58e1ff88}.roomHud{padding:9px 12px;text-align:right}.roomHud strong{color:var(--cyan);letter-spacing:.16em}.side{position:absolute;right:14px;top:88px;width:min(280px,36vw);padding:12px}.party{display:flex;flex-direction:column;gap:7px;margin-top:6px}.partyRow{display:grid;grid-template-columns:10px 1fr auto;gap:7px;align-items:center;font-size:11px}.partyDot{width:8px;height:8px;border-radius:50%;background:#31485e}.partyDot.live{background:var(--green)}.partyDot.down{background:var(--danger)}.mini{color:#7f98ae;font-size:10px}.objective{position:absolute;left:14px;bottom:14px;width:min(410px,50vw);padding:13px}.objective strong{display:block;font-size:13px}.objective p{margin:4px 0 0;color:#a9bdcf;font-size:11px;line-height:1.45}.abilities{position:absolute;right:14px;bottom:14px;display:flex;gap:8px;align-items:end}.abilityBtn{pointer-events:auto;min-width:78px;padding:9px;border-radius:13px;background:#07111ddd;border:1px solid #29455f;color:var(--text);text-align:left;cursor:pointer}.abilityBtn span{display:block;font-size:9px;color:#7f98ae;text-transform:uppercase;letter-spacing:.1em}.abilityBtn b{display:block;font-size:12px;margin-top:2px}.abilityBtn.hot{border-color:#8c62d9;box-shadow:0 0 18px #a98cff22}.abilityBtn.ready{border-color:var(--cyan)}
+#boss{position:absolute;left:50%;top:78px;transform:translateX(-50%);width:min(520px,60vw);display:none}.bossName{text-align:center;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#f4cfe3}.bossMeter{height:11px;margin-top:5px;background:#190c16;border:1px solid #4f263b;border-radius:99px;overflow:hidden}.bossMeter span{display:block;height:100%;background:linear-gradient(90deg,#ff6a8f,#ff3d9b,#a98cff);width:100%}.bossPhase{text-align:center;font-size:10px;color:#bca1b0;margin-top:4px}
+#toast{display:none;align-items:flex-start;justify-content:center;padding-top:25vh}.toastBox{background:#050d16ee;border:1px solid #385571;border-radius:16px;padding:13px 18px;box-shadow:0 15px 50px #000b;max-width:min(640px,90vw);text-align:center}.toastBox b{display:block;font-size:13px}.toastBox span{display:block;color:#96abc0;font-size:11px;margin-top:4px}
+#mobile{display:none}.mobileBtn,.stick{pointer-events:auto;position:absolute;user-select:none}.stick{width:122px;height:122px;border-radius:50%;border:1px solid #60809a66;background:#08142199;left:18px;bottom:18px}.knob{position:absolute;width:54px;height:54px;border-radius:50%;background:#9cd8ff33;border:1px solid #9cd8ff66;left:34px;top:34px}.look{left:auto;right:18px}.look .knob{background:#d39cff25}.mobileBtn{width:66px;height:48px;border-radius:13px;background:#07111de5;border:1px solid #35536d;color:white;font-size:10px;font-weight:800;bottom:24px}.m1{right:220px}.m2{right:146px}.m3{right:72px}.m4{right:24px;bottom:80px}.m5{right:96px;bottom:80px}.m6{right:168px;bottom:80px}.mobileLabel{position:absolute;right:22px;bottom:135px;color:#6e859b;font-size:9px;letter-spacing:.1em;text-transform:uppercase}
+#fade{position:absolute;inset:0;background:#02060b;opacity:0;pointer-events:none;transition:opacity .5s}
+@media(max-width:760px){.panel{padding:20px}.grid2{grid-template-columns:1fr}.cards{grid-template-columns:1fr 1fr}.card{min-height:155px;padding:11px}.ability{font-size:10px}.side{top:98px;right:10px;width:190px}.stability{min-width:58vw}.objective{left:10px;bottom:160px;width:58vw}.abilities{display:none}.roomHud{display:none}#mobile{display:block}.mobileBtn{display:block}.topbar{left:10px;right:10px}.heroFoot{flex-direction:column;align-items:stretch}.heroFoot .btn{width:100%}}
+@media(min-width:761px){.mobileBtn,.stick,.mobileLabel{display:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="lobby">
+    <div class="panel">
+      <div class="brand">VOID VOYAGE // THE DARK TRAILS // VERTICAL SLICE</div>
+      <div class="title">THE CRACK<br>IN THE WORLD</div>
+      <div class="subtitle">A playable Himalayas co-op slice. Build a room, share the code, choose a hero, tune fractured frequencies, solve the resonance puzzle, and bring down the Gravity Arbiter.</div>
+      <div class="grid2">
+        <div class="field"><label>Codename</label><input id="name" maxlength="18" value="Voyager" autocomplete="off"></div>
+        <div class="field"><label>Room code</label><input id="roomInput" maxlength="6" placeholder="e.g. 7K3P9Q" autocomplete="off" autocapitalize="characters"></div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="createBtn">Create Room</button>
+        <button class="btn secondary" id="joinBtn">Join Room</button>
+      </div>
+      <div id="roomLine" class="roomline hidden">ROOM <span class="roomcode" id="roomCode">------</span></div>
+      <div id="lobbyStatus" class="status">Peer-to-peer authority: host browser owns the simulation. Signaling uses PeerJS; game traffic is sent directly over WebRTC.</div>
+      <div class="hint">Desktop: WASD + mouse drag · Q tuner · E secondary · R signature · X ultimate · Z relay · F revive</div>
+      <div class="tiny">Designed for 2–4 players. A one-player host run is allowed for slice testing.</div>
+    </div>
+  </div>
+
+  <div id="heroSelect">
+    <div class="heroPanel">
+      <div class="heroHead"><div><h2>Choose your Resonance</h2><p id="heroModeText">Select one hero. Each room can field one of each.</p></div><div id="rosterCount" class="tiny">0 / 4</div></div>
+      <div class="cards" id="heroCards"></div>
+      <div class="heroFoot"><div class="tiny" id="heroStatus">Your selection stays available until the host starts the slice.</div><button class="btn primary" id="readyBtn">Lock Hero & Ready</button></div>
+    </div>
+  </div>
+
+  <div id="hud">
+    <div class="topbar">
+      <div class="hudPanel stability"><div class="hudLabel">Timeline Stability</div><div class="meter"><span id="stabilityFill"></span></div><div class="mini" id="stabilityText">STABLE</div></div>
+      <div class="hudPanel roomHud"><div class="hudLabel">ROOM</div><strong id="roomHudCode">------</strong><div class="mini" id="hostHud">HOST AUTHORITY</div></div>
+    </div>
+    <div class="hudPanel side"><div class="hudLabel">Entanglement</div><div style="margin-top:5px;font-size:17px;font-weight:800"><span id="multText">×1</span> <span class="mini">PARADOX MULTIPLIER</span></div><div class="mini" id="heatText">HEAT 0%</div><div class="hudLabel" style="margin-top:10px">Frequency Tuner</div><div style="font-family:ui-monospace,monospace;font-size:20px;margin-top:3px;color:var(--cyan)">F<span id="freqText">1</span></div><div class="mini" id="freqHint">Q cycles resonance</div><div class="party" id="party"></div></div>
+    <div id="boss"><div class="bossName">GRAVITY ARBITER</div><div class="bossMeter"><span id="bossFill"></span></div><div class="bossPhase" id="bossPhase">GRAVITY PHASE · 1G</div></div>
+    <div class="hudPanel objective"><strong id="objectiveTitle">THE CRACK — HIMALAYAS</strong><p id="objectiveText">Destroy the Fractured Shards. When the resonance nodes are lit, stand on all three plates to open the Arbiter gate.</p></div>
+    <div class="abilities">
+      <button class="abilityBtn" id="aPrimary"><span>R2 / LMB</span><b id="primaryName">Primary</b></button>
+      <button class="abilityBtn" id="aSecondary"><span>E / RB</span><b id="secondaryName">Secondary</b></button>
+      <button class="abilityBtn hot" id="aSignature"><span>R / LB+?</span><b id="signatureName">Signature</b></button>
+      <button class="abilityBtn" id="aUltimate"><span>X</span><b id="ultimateName">Ultimate</b></button>
+      <button class="abilityBtn" id="aRelay"><span>Z</span><b>Quantum Relay</b></button>
+    </div>
+  </div>
+  <div id="mobile">
+    <div class="stick" id="moveStick"><div class="knob"></div></div>
+    <div class="stick look" id="lookStick"><div class="knob"></div></div>
+    <div class="mobileLabel">TOUCH CONTROL</div>
+    <button class="mobileBtn m1" data-act="primary">ATTACK</button>
+    <button class="mobileBtn m2" data-act="secondary">SECOND</button>
+    <button class="mobileBtn m3" data-act="signature">SIGNATURE</button>
+    <button class="mobileBtn m4" data-act="ultimate">ULTIMATE</button>
+    <button class="mobileBtn m5" data-act="relay">RELAY</button>
+    <button class="mobileBtn m6" data-act="tune">TUNE</button>
+  </div>
+  <div id="toast"><div class="toastBox"><b id="toastTitle">Quantum anomaly detected</b><span id="toastText">Reality is unstable.</span></div></div>
+  <div id="fade"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
+<script>
+(function(){
+'use strict';
+
+const HEROES={
+  ninja:{label:'NINJA',role:'Mobility / Assassin / Burst',color:0x88a7ff,accent:'#9fb5ff',primary:'Trans-Dim Blade',secondary:'Grappling Hook',signature:'Phase Dash',ultimate:'Reality Sever',desc:'Close-range phase cuts, rapid repositioning, dimensional rescue.',speed:6.5,range:2.6,hp:125},
+  prodigy:{label:'PRODIGY',role:'Ranged Damage / Engineering',color:0x59e6ff,accent:'#59e6ff',primary:'Quantum Railgun',secondary:'Deploy Turret',signature:'Vector Manipulation',ultimate:'Vector Collapse',desc:'Precision fire, deployables, and battlefield physics.',speed:5.2,range:15,hp:105},
+  doctor:{label:'DOCTOR',role:'Support / Healing / Biology',color:0xffcf8b,accent:'#ffcf8b',primary:'Pressure Strike',secondary:'Cell Dart',signature:'Cellular Conversion',ultimate:'Genesis Field',desc:'Keep the team alive while turning biology into force.',speed:4.8,range:3.0,hp:145},
+  sage:{label:'SAGE',role:'Control / Defense / Space',color:0x69edb7,accent:'#69edb7',primary:'Sonar Pulse',secondary:'Ward Wall',signature:'Spatial Anchor',ultimate:'Stillpoint',desc:'Freeze, protect, and redraw the shape of the fight.',speed:4.4,range:7,hp:135}
+};
+const HERO_KEYS=Object.keys(HEROES);
+const state={role:null,room:'',peer:null,connections:new Map(),selfId:'',hero:'ninja',name:'Voyager',started:false,selectedHero:'ninja',localInput:{mx:0,my:0,yaw:0,primary:false,secondary:false,signature:false,ultimate:false,relay:false,tune:false,revive:false,sprint:false},lastSent:0,seq:0,ready:false,hostState:null,remotePlayers:{}};
+
+const els={lobby:gid('lobby'),heroSelect:gid('heroSelect'),hud:gid('hud'),create:gid('createBtn'),join:gid('joinBtn'),name:gid('name'),roomInput:gid('roomInput'),roomLine:gid('roomLine'),roomCode:gid('roomCode'),status:gid('lobbyStatus'),heroCards:gid('heroCards'),ready:gid('readyBtn'),heroStatus:gid('heroStatus'),rosterCount:gid('rosterCount'),roomHudCode:gid('roomHudCode'),party:gid('party'),objectiveTitle:gid('objectiveTitle'),objectiveText:gid('objectiveText'),freqText:gid('freqText'),multText:gid('multText'),heatText:gid('heatText'),stabilityFill:gid('stabilityFill'),stabilityText:gid('stabilityText'),boss:gid('boss'),bossFill:gid('bossFill'),bossPhase:gid('bossPhase'),toast:gid('toast'),toastTitle:gid('toastTitle'),toastText:gid('toastText'),primaryName:gid('primaryName'),secondaryName:gid('secondaryName'),signatureName:gid('signatureName')};
+function gid(x){return document.getElementById(x)}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function logStatus(s){els.status.textContent=s}
+function showToast(t,b,d=2200){els.toastTitle.textContent=t;els.toastText.textContent=b;els.toast.style.display='flex';clearTimeout(showToast.t);showToast.t=setTimeout(()=>els.toast.style.display='none',d)}
+function randCode(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<6;i++)s+=chars[(Math.random()*chars.length)|0];return s}
+function heroTaken(key){return Object.values(state.hostState?.players||{}).some(p=>p.hero===key && p.id!==state.selfId)}
+
+function renderHeroCards(){
+  els.heroCards.innerHTML='';
+  HERO_KEYS.forEach(k=>{const h=HEROES[k],taken=heroTaken(k);const d=document.createElement('div');d.className='card'+(state.selectedHero===k?' selected':'')+(taken?' taken':'');d.dataset.hero=k;d.innerHTML='<div class="pickDot"></div><div class="heroAccent" style="color:'+h.accent+'">'+h.label+'</div><h3>'+h.role.split(' / ')[0]+'</h3><div class="role">'+h.role+'</div><div class="ability"><b>Primary</b> '+h.primary+'<br><b>Secondary</b> '+h.secondary+'<br><b>Signature</b> '+h.signature+'<br><b>Ultimate</b> '+h.ultimate+'</div>'+(taken?'<div class="mini" style="margin-top:7px;color:#ff8ea9">TAKEN</div>':'');d.addEventListener('click',()=>{if(taken)return;state.selectedHero=k;renderHeroCards()});els.heroCards.appendChild(d)})
+}
+
+// --- Three.js scene ---
+let renderer,scene,camera,clock;const actorMeshes=new Map(),enemyMeshes=new Map(),fx=[];let groundY=0;
+function init3D(){
+  if(!window.THREE){els.status.textContent='Three.js did not load. Deploy this file to GitHub Pages or another HTTPS host with network access.';return false}
+  scene=new THREE.Scene();scene.background=new THREE.Color(0x07111d);scene.fog=new THREE.FogExp2(0x07111d,0.018);
+  camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,500);camera.position.set(0,5,8);
+  renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.domElement.id='gameCanvas';document.getElementById('app').prepend(renderer.domElement);
+  const hemi=new THREE.HemisphereLight(0x9ac9ff,0x141b24,1.8);scene.add(hemi);const sun=new THREE.DirectionalLight(0xcbe7ff,3.0);sun.position.set(40,55,25);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
+  const snow=new THREE.Mesh(new THREE.CircleGeometry(90,64),new THREE.MeshStandardMaterial({color:0xdbeaf2,roughness:0.98}));snow.rotation.x=-Math.PI/2;snow.receiveShadow=true;scene.add(snow);
+  for(let i=0;i<26;i++){const a=(i/26)*Math.PI*2+(Math.random()-.5)*.2,r=38+Math.random()*24;const h=10+Math.random()*24,w=5+Math.random()*7;const m=new THREE.Mesh(new THREE.ConeGeometry(w,h,6),new THREE.MeshStandardMaterial({color:0x45576b,roughness:1}));m.position.set(Math.cos(a)*r,h/2-1,Math.sin(a)*r);m.rotation.y=Math.random()*Math.PI;m.castShadow=true;m.receiveShadow=true;scene.add(m)}
+  for(let i=0;i<34;i++){const r=7+Math.random()*26,a=Math.random()*Math.PI*2;const s=.4+Math.random()*1.4;const m=new THREE.Mesh(new THREE.DodecahedronGeometry(s,0),new THREE.MeshStandardMaterial({color:0x5e7286,roughness:.9}));m.position.set(Math.cos(a)*r,.5,Math.sin(a)*r);m.rotation.set(Math.random(),Math.random(),Math.random());m.castShadow=true;scene.add(m)}
+  // Central crack + three resonance plates.
+  const crack=new THREE.Mesh(new THREE.BoxGeometry(.25,.04,26),new THREE.MeshBasicMaterial({color:0x8a63ff,transparent:true,opacity:.6}));crack.rotation.y=.4;crack.position.y=.05;scene.add(crack);
+  [[-7,-3],[7,-3],[0,9]].forEach((p,i)=>{const plate=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.2,.18,16),new THREE.MeshStandardMaterial({color:0x1a3149,emissive:0x112844,emissiveIntensity:.7,roughness:.7}));plate.position.set(p[0],.12,p[1]);plate.userData.id=i;scene.add(plate);const ring=new THREE.Mesh(new THREE.TorusGeometry(2.1,.08,8,32),new THREE.MeshBasicMaterial({color:0x58e1ff,transparent:true,opacity:.25}));ring.rotation.x=Math.PI/2;ring.position.copy(plate.position);ring.userData.id=i;scene.add(ring)});
+  clock=new THREE.Clock();window.addEventListener('resize',onResize);animate();return true
+}
+function onResize(){if(!renderer)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.75))}
+function makeActor(hero){const h=HEROES[hero];const g=new THREE.Group();const body=new THREE.Mesh(new THREE.CylinderGeometry(.38,.48,1.25,8),new THREE.MeshStandardMaterial({color:h.color,metalness:.25,roughness:.65}));body.position.y=1.05;body.castShadow=true;g.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.32,12,8),new THREE.MeshStandardMaterial({color:0xe7c9ae,roughness:.8}));head.position.y=1.95;head.castShadow=true;g.add(head);const ring=new THREE.Mesh(new THREE.TorusGeometry(.55,.055,8,24),new THREE.MeshBasicMaterial({color:h.color,transparent:true,opacity:.75}));ring.rotation.x=Math.PI/2;ring.position.y=.1;g.add(ring);const weapon=new THREE.Mesh(new THREE.BoxGeometry(hero==='ninja'?.15:.12,hero==='prodigy'?0.12:.12,hero==='ninja'?1.6:.5),new THREE.MeshBasicMaterial({color:h.color}));weapon.position.set(hero==='ninja'?0.7:0.55,1.0,0);weapon.rotation.z=hero==='ninja'?-.55:0;g.add(weapon);return g}
+function makeEnemy(){const g=new THREE.Group();const mat=new THREE.MeshStandardMaterial({color:0x0b0d12,emissive:0x30205c,emissiveIntensity:1.8,metalness:.55,roughness:.2,transparent:true,opacity:.96});const core=new THREE.Mesh(new THREE.IcosahedronGeometry(.85,0),mat);core.scale.set(.7,1.35,.7);core.rotation.z=.4;core.castShadow=true;g.add(core);const ring=new THREE.Mesh(new THREE.TorusGeometry(.8,.045,6,18),new THREE.MeshBasicMaterial({color:0xa98cff,transparent:true,opacity:.75}));ring.rotation.x=Math.PI/2;g.add(ring);return g}
+function syncMeshes(s){
+  const players=s.players||{};for(const [id,m] of actorMeshes){if(!players[id]){scene.remove(m);actorMeshes.delete(id)}}
+  Object.values(players).forEach(p=>{let m=actorMeshes.get(p.id);if(!m){m=makeActor(p.hero);actorMeshes.set(p.id,m);scene.add(m)}const target=new THREE.Vector3(p.x,p.y||0,p.z);m.position.lerp(target,.65);m.rotation.y=p.yaw||0;m.visible=true;m.userData.downed=p.downed;m.scale.y=p.downed?.65:1;m.children[2].material.opacity=p.downed?.15:.75});
+  const enemies=s.enemies||{};for(const [id,m] of enemyMeshes){if(!enemies[id]){scene.remove(m);enemyMeshes.delete(id)}}
+  Object.values(enemies).forEach(e=>{let m=enemyMeshes.get(e.id);if(!m){m=makeEnemy();enemyMeshes.set(e.id,m);scene.add(m)}m.position.lerp(new THREE.Vector3(e.x,.6,e.z),.6);m.visible=!e.dead;m.rotation.y+=.02;const c=m.children[0].material;c.emissiveIntensity=e.vulnerable?3.2:1.2;c.color.setHex(e.vulnerable?0x12151d:0x05060a)});
+}
+function animate(){requestAnimationFrame(animate);if(!renderer)return;const t=clock.getElapsedTime();for(let i=fx.length-1;i>=0;i--){const f=fx[i];f.life-=.03;f.mesh.scale.multiplyScalar(1.035);f.mesh.material.opacity=Math.max(0,f.life/30);if(f.life<=0){scene.remove(f.mesh);fx.splice(i,1)}};const me=state.hostState?.players?.[state.selfId]||state.hostState?.players?.[state.localId];if(me){const c=new THREE.Vector3(me.x,2.4,me.z);const behind=new THREE.Vector3(Math.sin(state.localInput.yaw)*7,4.2,Math.cos(state.localInput.yaw)*7);camera.position.lerp(c.clone().add(behind),.08);camera.lookAt(c)}renderer.render(scene,camera)}
+function burst(pos,color=0x58e1ff){const mesh=new THREE.Mesh(new THREE.SphereGeometry(.12,8,6),new THREE.MeshBasicMaterial({color,transparent:true,opacity:1}));mesh.position.set(pos.x,pos.y||1,pos.z);scene.add(mesh);fx.push({mesh,life:28})}
+
+// --- Host simulation ---
+const HOST={tick:null,broadcast:null,state:null,accum:0,last:0};
+function newGameState(){
+  const s={phase:'lobby',started:false,players:{},enemies:{},plates:[false,false,false],puzzle:false,boss:null,stability:1,combo:1,comboT:0,heat:0,fx:[],message:'Destroy the Fractured Shards.',objective:'Destroy the Fractured Shards. When the resonance nodes are lit, stand on all three plates to open the Arbiter gate.',nextId:1};
+  for(let i=0;i<7;i++){const a=Math.random()*Math.PI*2,r=10+Math.random()*14;const id='S'+i;s.enemies[id]={id,x:Math.cos(a)*r,z:Math.sin(a)*r,hy:0.8,hp:70,maxHp:70,freq:1+(i%4),vulnerable:false,dead:false,t:Math.random()*5}}
+  return s
+}
+function addPlayer(id,name,hero){if(Object.values(HOST.state.players).length>=4)return false;if(Object.values(HOST.state.players).some(p=>p.hero===hero))return false;const idx=Object.keys(HOST.state.players).length;const spawn=[[-10,4],[-7,6],[7,6],[10,4]][idx]||[0,0];const h=HEROES[hero];HOST.state.players[id]={id,name:name||'Voyager',hero,x:spawn[0],y:0,z:spawn[1],yaw:0,hp:h.hp,maxHp:h.hp,downed:false,downT:0,reviveT:0,frequency:1,signatureCD:0,ultimate:0,secondaryCD:0,reviveBoost:0};return true}
+function dist2(a,b){const dx=a.x-b.x,dz=a.z-b.z;return dx*dx+dz*dz}
+function facePoint(p,dist){return {x:p.x-Math.sin(p.yaw)*dist,z:p.z-Math.cos(p.yaw)*dist}}
+function doHit(p,amount,range){let best=null,bd=Infinity;for(const e of Object.values(HOST.state.enemies)){if(e.dead)continue;const d=dist2(p,e);if(d<=range*range&&d<bd){best=e;bd=d}}if(!best)return false;if(best.freq!==p.frequency)return 'shield';best.hp-=amount*HOST.state.combo;HOST.state.combo=Math.min(5,HOST.state.combo+.25);HOST.state.comboT=4;best.vulnerable=true;burst(best, HEROES[p.hero].color);if(best.hp<=0){best.dead=true;HOST.state.heat=Math.min(1,HOST.state.heat+.05)}return true}
+function damageBoss(p,amount){const b=HOST.state.boss;if(!b||b.dead)return false;if(b.freq!==p.frequency)return 'shield';b.hp-=amount*HOST.state.combo;HOST.state.combo=Math.min(5,HOST.state.combo+.4);HOST.state.comboT=4;burst({x:b.x,y:1.5,z:b.z},HEROES[p.hero].color);if(b.hp<=0){b.hp=0;b.dead=true;HOST.state.phase='complete';HOST.state.stability=.15;HOST.state.message='The Arbiter collapses. The crack remains.'}return true}
+function healNear(p,amount,range){Object.values(HOST.state.players).forEach(q=>{if(dist2(p,q)<range*range&&!q.downed)q.hp=Math.min(q.maxHp,q.hp+amount)})}
+function useAction(p,act){
+  const h=p.hero;const hero=HEROES[h];let hit=false;
+  if(act==='primary'){if(HOST.state.boss&&!HOST.state.boss.dead&&p.y<2)hit=damageBoss(p,h==='ninja'?24:h==='prodigy'?22:h==='doctor'?18:20);else hit=doHit(p,h==='ninja'?24:h==='prodigy'?26:h==='doctor'?18:22,h==='prodigy'?16:hero.range)}
+  if(act==='secondary'&&p.secondaryCD<=0){p.secondaryCD=h==='ninja'?.2:h==='prodigy'?7:h==='doctor'?4:6;if(h==='ninja'){const fp=facePoint(p,5);p.x=fp.x;p.z=fp.z;hit=doHit(p,28,5)}else if(h==='prodigy'){let e=Object.values(HOST.state.enemies).find(e=>!e.dead);if(e){e.hp-=22;e.vulnerable=true} }else if(h==='doctor'){healNear(p,35,6);hit=doHit(p,12,3.2)}else{Object.values(HOST.state.enemies).forEach(e=>{if(!e.dead&&dist2(p,e)<49)e.t+=2});hit=true}}
+  if(act==='signature'&&p.signatureCD<=0){p.signatureCD=h==='ninja'?5:h==='prodigy'?6:h==='doctor'?8:7;if(h==='ninja'){const fp=facePoint(p,8);p.x=fp.x;p.z=fp.z;hit=doHit(p,55,6)}else if(h==='prodigy'){Object.values(HOST.state.enemies).forEach(e=>{if(!e.dead&&dist2(p,e)<64){e.x += (e.x-p.x)*.45;e.z += (e.z-p.z)*.45;e.vulnerable=true;e.hp-=34}});hit=true}else if(h==='doctor'){healNear(p,70,8);Object.values(HOST.state.enemies).forEach(e=>{if(!e.dead&&dist2(p,e)<64)e.hp-=28});hit=true}else{Object.values(HOST.state.enemies).forEach(e=>{if(!e.dead&&dist2(p,e)<81){e.t+=5;e.vulnerable=true;e.hp-=26}});hit=true}}
+  if(act==='ultimate'&&p.ultimate>=100){p.ultimate=0;if(h==='ninja'){if(HOST.state.boss&&!HOST.state.boss.dead)damageBoss(p,180);Object.values(HOST.state.enemies).forEach(e=>{if(!e.dead&&dist2(p,e)<144){e.hp-=80;e.vulnerable=true}})}else if(h==='prodigy'){Object.values(HOST.state.enemies).forEach(e=>{if(!e.dead){e.hp-=120;e.vulnerable=true}});if(HOST.state.boss&&!HOST.state.boss.dead)damageBoss(p,160)}else if(h==='doctor'){healNear(p,120,10);HOST.state.stability=Math.min(1,HOST.state.stability+.12);if(HOST.state.boss&&!HOST.state.boss.dead)damageBoss(p,90)}else{Object.values(HOST.state.enemies).forEach(e=>{if(!e.dead){e.t+=12;e.hp-=70;e.vulnerable=true}});if(HOST.state.boss&&!HOST.state.boss.dead)damageBoss(p,140)}hit=true}
+  if(act==='relay'){const alive=Object.values(HOST.state.players).filter(q=>!q.downed);if(alive.length>=2&&HOST.state.heat<.9){HOST.state.heat=Math.min(1,HOST.state.heat+.18);HOST.state.combo=Math.min(5,HOST.state.combo+.8);HOST.state.comboT=6;Object.values(HOST.state.enemies).forEach(e=>{if(!e.dead&&alive.some(q=>dist2(q,e)<144))e.hp-=55*alive.length;e.vulnerable=true});if(HOST.state.boss&&!HOST.state.boss.dead)damageBoss(p,100+alive.length*35);alive.forEach(q=>q.ultimate=Math.min(100,q.ultimate+22));HOST.state.message=alive.length===4?'PERFECT ENTANGLEMENT':'QUANTUM RELAY';hit=true}else{HOST.state.message='Relay needs two living Voyagers and lower heat.'}}
+  if(hit===true && act!=='ultimate')p.ultimate=Math.min(100,p.ultimate+5);
+}
+function simHost(dt){
+  const s=HOST.state;if(!s || !s.started)return;
+  
+  s.comboT=Math.max(0,s.comboT-dt);if(s.comboT===0)s.combo=Math.max(1,s.combo-.6*dt);s.heat=Math.max(0,s.heat-dt*.018);s.stability=Math.max(.05,Math.min(1,s.stability+dt*.005));
+  // Enemy AI.
+  for(const e of Object.values(s.enemies)){if(e.dead)continue;e.t-=dt;if(e.t<=0){e.freq=1+((e.freq)%4);e.t=4+Math.random()*2;e.vulnerable=false}const ps=Object.values(s.players).filter(p=>!p.downed);if(ps.length){let target=ps.reduce((a,b)=>dist2(e,a)<dist2(e,b)?a:b);const d=Math.sqrt(dist2(e,target));if(d>2.3){e.x+=(target.x-e.x)/Math.max(d,.001)*dt*.9;e.z+=(target.z-e.z)/Math.max(d,.001)*dt*.9}else if(Math.random()<dt*.6){target.hp-=8;if(target.hp<=0){target.hp=0;target.downed=true;target.downT=20;s.message=target.name+' entered Fracture State.'}}}}
+  for(const p of Object.values(s.players)){
+    const h=HEROES[p.hero];p.signatureCD=Math.max(0,p.signatureCD-dt);p.secondaryCD=Math.max(0,p.secondaryCD-dt);if(!p.downed){const inp=p.input||{};const sprint=inp.sprint?1.25:1;const len=Math.hypot(inp.mx,inp.my)||1;const mx=inp.mx/len,my=inp.my/len;const cs=Math.cos(p.yaw),sn=Math.sin(p.yaw);p.x+=(sn*mx+cs*my)*h.speed*dt*sprint;p.z+=(cs*mx-sn*my)*h.speed*dt*sprint;p.x=Math.max(-24,Math.min(24,p.x));p.z=Math.max(-20,Math.min(22,p.z));if(inp.tune){p.frequency=p.frequency%4+1;p.input.tune=false;s.message=p.name+' tuned to F'+p.frequency+'.'}if(inp.primary){useAction(p,'primary');p.input.primary=false}if(inp.secondary){useAction(p,'secondary');p.input.secondary=false}if(inp.signature){useAction(p,'signature');p.input.signature=false}if(inp.ultimate){useAction(p,'ultimate');p.input.ultimate=false}if(inp.relay){useAction(p,'relay');p.input.relay=false}
+      if(inp.revive){const near=Object.values(s.players).find(q=>q.id!==p.id&&q.downed&&dist2(p,q)<16);if(near){near.reviveT=(near.reviveT||0)+dt*(h==='doctor'?1.6:1);if(near.reviveT>=2.2){near.downed=false;near.reviveT=0;near.hp=Math.max(45,near.maxHp*.42);s.combo=Math.min(5,s.combo+.5);s.message=near.name+' revived.'}}} }
+    else {p.downT-=dt;p.reviveT=0;if(p.downT<=0){p.downed=false;p.hp=p.maxHp*.5;p.x=0;p.z=0;s.message=p.name+' re-entered the fracture.'}}
+  }
+  // Puzzle plates — all three occupied for 1.5 seconds.
+  if(s.phase==='shards' && Object.values(s.enemies).every(e=>e.dead)){s.phase='puzzle';s.message='The resonance nodes are live. Hold all three plates at once.';s.objective='Hold all three resonance plates simultaneously. Spread out.'}
+  if(s.phase==='puzzle'){[[ -7,-3],[7,-3],[0,9]].forEach((a,i)=>{s.plates[i]=Object.values(s.players).some(p=>!p.downed&&dist2(p,{x:a[0],z:a[1]})<7)});if(s.plates.every(Boolean)){s.phase='boss';s.puzzle=true;s.boss={x:0,z:7,hp:1200,maxHp:1200,freq:1,phase:1,timer:0,dead:false};s.message='GRAVITY ARBITER ONLINE.';s.objective='Tune to the Arbiter frequency and break its gravity core.';s.stability=.75}}
+  if(s.phase==='boss'&&s.boss&&!s.boss.dead){const b=s.boss;b.timer+=dt;if(b.timer>6){b.timer=0;b.freq=b.freq%4+1;b.phase=b.phase%3+1;s.stability=Math.max(.25,s.stability-.05);s.heat=Math.min(1,s.heat+.04);s.message='Gravity shift. Arbiter resonance F'+b.freq+'.'}Object.values(s.players).forEach(p=>{if(!p.downed&&dist2(p,b)<25&&Math.random()<dt*.12){p.hp-=10;if(p.hp<=0){p.hp=0;p.downed=true;p.downT=20}}})}
+  if(s.phase==='complete'){s.stability=Math.max(.1,s.stability-dt*.01)}
+  // clean enemies that have fallen below zero
+  Object.values(s.enemies).forEach(e=>{if(e.hp<=0)e.dead=true});
+}
+function hostSnapshot(){const s=HOST.state;const clean={started:!!s.started,phase:s.phase,players:{},enemies:{},plates:s.plates,puzzle:s.puzzle,boss:s.boss?{x:s.boss.x,z:s.boss.z,hp:s.boss.hp,maxHp:s.boss.maxHp,freq:s.boss.freq,phase:s.boss.phase,dead:s.boss.dead}:null,stability:s.stability,combo:s.combo,heat:s.heat,message:s.message,objective:s.objective};Object.values(s.players).forEach(p=>clean.players[p.id]={...p,input:undefined});Object.values(s.enemies).forEach(e=>clean.enemies[e.id]={...e});return clean}
+function hostBroadcast(){const snap=hostSnapshot();for(const c of state.connections.values()){try{c.send({t:'state',s:snap})}catch(e){}};state.hostState=snap;updateHud(snap)}
+function beginHost(){if(!HOST.state)HOST.state=newGameState();HOST.last=performance.now();if(HOST.tick)clearInterval(HOST.tick);HOST.tick=setInterval(()=>{const now=performance.now(),dt=Math.min(.06,(now-HOST.last)/1000);HOST.last=now;simHost(dt);hostBroadcast()},50)}
+
+// --- networking ---
+function setupHost(){
+  state.role='host';state.name=els.name.value.trim()||'Voyager';state.room=randCode();state.selectedHero='ninja';state.peer=new Peer(state.room,{config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});els.roomLine.classList.remove('hidden');els.roomCode.textContent=state.room;els.roomHudCode.textContent=state.room;els.roomInput.value=state.room;logStatus('Creating room '+state.room+'…');
+  state.peer.on('open',id=>{state.selfId=id;HOST.state=newGameState();addPlayer(id,state.name,state.selectedHero);beginHost();showHeroSelect(true);logStatus('Room live. Share the code with 1–3 players.');hostBroadcast();});
+  state.peer.on('connection',conn=>{conn.on('open',()=>{state.connections.set(conn.peer,conn);conn.send({t:'welcome',id:conn.peer,room:state.room,roster:hostSnapshot(),host:true})});conn.on('data',msg=>hostData(conn,msg));conn.on('close',()=>{delete HOST.state.players[conn.peer];state.connections.delete(conn.peer);hostBroadcast()});conn.on('error',()=>{})});
+  state.peer.on('error',e=>{logStatus('Peer error: '+e.type+'. Try another room code.');});
+}
+function hostData(conn,msg){if(!HOST.state||!msg)return;if(msg.t==='hello'){const hero=msg.hero;const ok=addPlayer(conn.peer,msg.name,hero);conn.send({t:'welcome',id:conn.peer,room:state.room,roster:hostSnapshot(),host:true,accepted:ok});if(!ok){conn.send({t:'reject',reason:'That hero is taken or the room is full.'});return}hostBroadcast();return}const p=HOST.state.players[conn.peer];if(!p)return;if(msg.t==='input'){p.input=Object.assign(p.input||{},msg.input||{});p.yaw=Number(msg.input?.yaw)||p.yaw}else if(msg.t==='hero'&&!HOST.state.started){if(!Object.values(HOST.state.players).some(q=>q.id!==p.id&&q.hero===msg.hero)){p.hero=msg.hero;hostBroadcast()}}else if(msg.t==='ready'){p.ready=!!msg.value;hostBroadcast()}else if(msg.t==='start'&&conn.peer===state.selfId){HOST.state.started=true}}
+function guestJoin(){
+  state.role='guest';state.name=els.name.value.trim()||'Voyager';state.room=els.roomInput.value.trim().toUpperCase();if(!/^[A-Z0-9]{6}$/.test(state.room)){logStatus('Enter a six-character room code.');return}state.peer=new Peer({config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});logStatus('Connecting to room '+state.room+'…');
+  state.peer.on('open',id=>{state.selfId=id;const c=state.peer.connect(state.room,{reliable:true,serialization:'json'});state.connections.set('host',c);c.on('open',()=>{c.send({t:'hello',name:state.name,hero:state.selectedHero})});c.on('data',guestData);c.on('close',()=>showToast('HOST DISCONNECTED','The room authority left the slice.'))});
+  state.peer.on('error',e=>{logStatus('Join failed: '+e.type+'. Check the code and try again.');});
+}
+function guestData(msg){if(!msg)return;if(msg.t==='welcome'){if(msg.accepted===false){logStatus('Room rejected this hero. Pick another.');return}state.hostState=msg.roster;showHeroSelect(false);updateHud(msg.roster);logStatus('Connected to '+msg.room+'.');}else if(msg.t==='reject'){logStatus(msg.reason||'Join rejected.')}else if(msg.t==='state'){state.hostState=msg.s;updateHud(msg.s);if(msg.s.started)startGameUI(msg.s)}}
+function sendToHost(msg){const c=state.role==='guest'?state.connections.get('host'):null;if(c&&c.open)try{c.send(msg)}catch(e){}}
+
+function showHeroSelect(host){els.lobby.style.display='none';els.heroSelect.style.display='flex';els.heroModeText.textContent=host?'Host selection. Once everyone is connected, the host starts the slice.':'Guest selection. Choose an available hero, then ready up.';renderHeroCards();if(!state.peer)return}
+function startGameUI(s){if(state.started)return;state.started=true;els.heroSelect.style.display='none';els.hud.style.display='block';els.mobile.style.display='block';els.boss.style.display=s.phase==='boss'?'block':'none';showToast('THE HIMALAYAS','Four signals. One fracture.');}
+function hostStart(){HOST.state.started=true;HOST.state.phase='shards';HOST.state.objective='Destroy the Fractured Shards. When the resonance nodes are lit, stand on all three plates to open the Arbiter gate.';HOST.state.message='Destroy the Fractured Shards.';for(const c of state.connections.values())try{c.send({t:'state',s:hostSnapshot()})}catch(e){}startGameUI(hostSnapshot());}
+function updateHud(s){if(!s)return;const me=s.players?.[state.selfId];els.roomHudCode.textContent=state.room||'------';els.multText.textContent='×'+Math.max(1,Math.round(s.combo*10)/10).toFixed(1).replace('.0','');els.heatText.textContent='HEAT '+Math.round(s.heat*100)+'%';if(me){els.freqText.textContent=me.frequency;const h=HEROES[me.hero];els.primaryName.textContent=h.primary;els.secondaryName.textContent=h.secondary;els.signatureName.textContent=h.signature;}
+els.stabilityFill.style.width=(s.stability*100)+'%';els.stabilityText.textContent=s.stability>.7?'STABLE':s.stability>.4?'FLICKERING':'COLLAPSE IMMINENT';els.party.innerHTML=Object.values(s.players||{}).map(p=>'<div class="partyRow"><span class="partyDot '+(p.downed?'down':'live')+'"></span><span>'+esc(p.name)+' <span class="mini">'+HEROES[p.hero].label+'</span></span><span class="mini">'+Math.ceil(Math.max(0,p.hp))+'/'+p.maxHp+'</span></div>').join('');els.objectiveText.textContent=s.objective||s.message||'';els.objectiveTitle.textContent=s.phase==='shards'?'THE CRACK — HIMALAYAS':s.phase==='puzzle'?'RESONANCE LOCK':'GRAVITY ARBITER';els.boss.style.display=s.phase==='boss'?'block':'none';if(s.boss){els.bossFill.style.width=(100*s.boss.hp/s.boss.maxHp)+'%';els.bossPhase.textContent='GRAVITY PHASE · '+(s.boss.phase===1?'1G':s.boss.phase===2?'10G':'INVERSION')+' · RESONANCE F'+s.boss.freq}}
+
+els.create.addEventListener('click',()=>{if(!init3D())return;setupHost()});
+els.join.addEventListener('click',()=>{if(!init3D())return;guestJoin();showHeroSelect(false)});
+els.ready.addEventListener('click',()=>{state.hero=state.selectedHero;state.ready=true;els.heroStatus.textContent='Ready as '+HEROES[state.hero].label+'. Waiting for mission start…';if(state.role==='host'){const p=HOST.state.players[state.selfId];p.hero=state.hero;p.ready=true;renderHeroCards();hostBroadcast();if(HOST.state.started)startGameUI(hostSnapshot());else {els.ready.textContent='Start Mission';els.ready.onclick=()=>{hostStart()}}}else{sendToHost({t:'hero',hero:state.hero});sendToHost({t:'ready',value:true})}});
+
+// desktop input
+const keys={};addEventListener('keydown',e=>{if(document.activeElement===els.name||document.activeElement===els.roomInput)return;keys[e.code]=true;if(e.code==='KeyQ')queueAction('tune');if(e.code==='KeyE')queueAction('secondary');if(e.code==='KeyR')queueAction('signature');if(e.code==='KeyX')queueAction('ultimate');if(e.code==='KeyZ')queueAction('relay');if(e.code==='KeyF')state.localInput.revive=true});addEventListener('keyup',e=>keys[e.code]=false);rendererMouse();function rendererMouse(){let drag=false,lastX=0;document.addEventListener('pointerdown',e=>{if(e.target.closest('button,.panel,.heroPanel,input'))return;if(e.pointerType==='mouse'){drag=true;lastX=e.clientX}});document.addEventListener('pointerup',()=>drag=false);document.addEventListener('pointermove',e=>{if(drag&&e.pointerType==='mouse'){const dx=e.clientX-lastX;lastX=e.clientX;state.localInput.yaw-=dx*.008}})}
+function queueAction(a){state.localInput[a]=true}
+if(document.addEventListener){document.addEventListener('pointerdown',e=>{if(e.target && e.target.id==='gameCanvas' && e.pointerType==='mouse' && e.button===0)queueAction('primary')})}
+function updateInput(){if(!state.started)return;let mx=(keys.KeyD?1:0)-(keys.KeyA?1:0),my=(keys.KeyW?1:0)-(keys.KeyS?1:0);state.localInput.mx=mx;state.localInput.my=my;state.localInput.sprint=!!keys.ShiftLeft;state.localInput.primary=!!(keys.Space||keys.ArrowUp);}
+const __inputInterval=setInterval(()=>{updateInput();if(state.role==='guest'){const payload={...state.localInput};state.localInput.primary=false;state.seq++;sendToHost({t:'input',seq:state.seq,input:payload});}else if(state.role==='host'&&HOST.state?.players?.[state.selfId]){HOST.state.players[state.selfId].input=Object.assign(HOST.state.players[state.selfId].input||{},state.localInput);HOST.state.players[state.selfId].yaw=state.localInput.yaw;state.localInput.primary=false}},50);window.__VVInputInterval=__inputInterval;
+
+// HUD ability buttons
+[['aPrimary','primary'],['aSecondary','secondary'],['aSignature','signature'],['aUltimate','ultimate'],['aRelay','relay']].forEach(([id,a])=>gid(id)?.addEventListener('pointerdown',()=>queueAction(a)));
+// Touch joystick and look pad
+function pad(id,kind){const el=gid(id),kn=el.querySelector('.knob');let active=false,cx=0,cy=0;el.addEventListener('pointerdown',e=>{active=true;cx=e.clientX;cy=e.clientY;el.setPointerCapture(e.pointerId)});el.addEventListener('pointermove',e=>{if(!active)return;const dx=e.clientX-cx,dy=e.clientY-cy,len=Math.min(42,Math.hypot(dx,dy)),ang=Math.atan2(dy,dx);const ox=Math.cos(ang)*len,oy=Math.sin(ang)*len;kn.style.transform='translate('+ox+'px,'+oy+'px)';if(kind==='move'){state.localInput.mx=ox/42;state.localInput.my=-oy/42}else{state.localInput.yaw-=dx*.006;cx=e.clientX}});const end=()=>{active=false;kn.style.transform='translate(0,0)';if(kind==='move'){state.localInput.mx=0;state.localInput.my=0}};el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end)}pad('moveStick','move');pad('lookStick','look');document.querySelectorAll('.mobileBtn').forEach(b=>b.addEventListener('pointerdown',()=>queueAction(b.dataset.act)));
+
+// join hero selection hot-refresh
+const __heroRefreshInterval=setInterval(()=>{if(els.heroSelect.style.display==='flex'){renderHeroCards();els.rosterCount.textContent=Object.keys(state.hostState?.players||HOST.state?.players||{}).length+' / 4';}},600);window.__VVHeroRefreshInterval=__heroRefreshInterval;
+
+// pre-start guest hero selection must send changes
+const oldRender=renderHeroCards;
+
+if(!init3D()){/* Libraries may be unavailable in an isolated preview; the file remains GitHub Pages-ready. */} window.__VV={state,HOST,els,HEROES,HERO_KEYS,scene,camera,renderer,init3D};
+})();
+</script>
+<script>
+(function(){
+'use strict';
+
+const V=window.__VV;
+if(!V)return;
+if(window.__VVInputInterval)clearInterval(window.__VVInputInterval);
+if(window.__VVHeroRefreshInterval)clearInterval(window.__VVHeroRefreshInterval);
+
+const {state,HOST,HEROES,HERO_KEYS,scene,camera}=V;
+const $=id=>document.getElementById(id);
+const ui={
+  lobby:$('lobby'),heroSelect:$('heroSelect'),hud:$('hud'),create:$('createBtn'),join:$('joinBtn'),name:$('name'),roomInput:$('roomInput'),
+  roomLine:$('roomLine'),roomCode:$('roomCode'),status:$('lobbyStatus'),heroCards:$('heroCards'),ready:$('readyBtn'),heroStatus:$('heroStatus'),
+  rosterCount:$('rosterCount'),party:$('party'),objectiveTitle:$('objectiveTitle'),objectiveText:$('objectiveText'),freqText:$('freqText'),
+  multText:$('multText'),heatText:$('heatText'),stabilityFill:$('stabilityFill'),stabilityText:$('stabilityText'),boss:$('boss'),bossFill:$('bossFill'),
+  bossPhase:$('bossPhase'),mobile:$('mobile')
+};
+
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function setStatus(s){ui.status.textContent=s}
+function code(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let o='';for(let i=0;i<6;i++)o+=chars[(Math.random()*chars.length)|0];return o}
+function clockNow(){return performance.now()/1000}
+function dist2(a,b){return (a.x-b.x)**2+(a.z-b.z)**2}
+function inRange(a,b,r){return dist2(a,b)<=r*r}
+function cloneButton(el){const n=el.cloneNode(true);el.replaceWith(n);return n}
+
+ui.create=cloneButton(ui.create);ui.join=cloneButton(ui.join);ui.ready=cloneButton(ui.ready);
+
+const matchHud=document.createElement('div');
+matchHud.id='vvMatchHud';
+matchHud.innerHTML='<div class="hudPanel vvMatchBox"><div><span class="vvLabel">PHASE</span><strong id="vvPhase">1 / 3 · SHARD WAVES</strong></div><div><span class="vvLabel">TIME</span><strong id="vvTime">00:00</strong></div><div><span class="vvLabel">SCORE</span><strong id="vvScore">0</strong></div></div>';
+ui.hud.appendChild(matchHud);
+
+const endLayer=document.createElement('div');
+endLayer.id='vvEnd';
+endLayer.className='hidden';
+endLayer.innerHTML='<div class="vvEndPanel"><div class="brand">VOID VOYAGE // VERTICAL SLICE</div><div class="vvEndTitle" id="vvEndTitle">MISSION COMPLETE</div><div class="vvEndSub" id="vvEndSub">The fracture holds.</div><div class="vvEndStats" id="vvEndStats"></div><div class="actions"><button class="btn primary" id="vvAgain">RUN AGAIN</button><button class="btn secondary" id="vvLobby">ROOM SCREEN</button></div></div>';
+document.getElementById('app').appendChild(endLayer);
+
+const reviveBtn=document.createElement('button');
+reviveBtn.className='mobileBtn vvRevive';
+reviveBtn.textContent='REVIVE';
+reviveBtn.style.display='none';
+ui.mobile.appendChild(reviveBtn);
+
+const phaseEl=$('vvPhase'),timeEl=$('vvTime'),scoreEl=$('vvScore'),endTitle=$('vvEndTitle'),endSub=$('vvEndSub'),endStats=$('vvEndStats');
+
+const style=document.createElement('style');
+style.textContent='#vvMatchHud{position:absolute;top:12px;left:50%;transform:translateX(-50%);pointer-events:none;z-index:4} .vvMatchBox{display:flex;gap:18px;align-items:center;padding:9px 13px;white-space:nowrap} .vvMatchBox>div{display:flex;flex-direction:column;gap:2px} .vvLabel{font-size:9px;color:#7891a8;letter-spacing:.14em;text-transform:uppercase} .vvMatchBox strong{font-size:12px} #vvEnd{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%,#122c4499,#030811f2 72%);z-index:30} #vvEnd.hidden{display:none} .vvEndPanel{width:min(720px,92vw);text-align:center;padding:32px;background:linear-gradient(180deg,#0d1c2cf7,#050c15f8);border:1px solid #3a5870;border-radius:22px;box-shadow:0 30px 100px #000b} .vvEndTitle{font-size:clamp(38px,7vw,72px);font-weight:900;letter-spacing:-.05em;margin:9px 0} .vvEndSub{color:#9eb2c6;line-height:1.5} .vvEndStats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:22px 0} .vvEndStats div{padding:12px;background:#07111d;border:1px solid #25415b;border-radius:12px} .vvEndStats b{display:block;font-size:18px} .vvEndStats span{display:block;color:#6f879c;font-size:9px;text-transform:uppercase;letter-spacing:.12em;margin-top:3px} .vvRevive{right:24px!important;bottom:138px!important} @media(max-width:760px){#vvMatchHud{left:10px;right:10px;transform:none}.vvMatchBox{justify-content:space-between;gap:8px}.vvMatchBox strong{font-size:10px}.vvEndStats{grid-template-columns:1fr 1fr}.vvEndPanel{padding:24px 16px}}';
+document.head.appendChild(style);
+
+let actors=new Map(),enemies=new Map(),bossMesh=null;
+let hostConn=null,peer=null,seq=0,lastTick=clockNow();
+
+function makeActor(hero){
+  const h=HEROES[hero],g=new THREE.Group(),geom=THREE.CapsuleGeometry?new THREE.CapsuleGeometry(.42,.95,4,8):new THREE.CylinderGeometry(.42,.5,1.45,8);
+  g.userData.vvType='actor';
+  const body=new THREE.Mesh(geom,new THREE.MeshStandardMaterial({color:h.color,metalness:.3,roughness:.55}));body.position.y=1.15;body.castShadow=true;g.add(body);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.32,12,8),new THREE.MeshStandardMaterial({color:0xdab89d,roughness:.85}));head.position.y=2.1;head.castShadow=true;g.add(head);
+  const halo=new THREE.Mesh(new THREE.TorusGeometry(.58,.055,8,24),new THREE.MeshBasicMaterial({color:h.color,transparent:true,opacity:.8}));halo.rotation.x=Math.PI/2;halo.position.y=.12;g.add(halo);
+  return g;
+}
+function makeShard(){
+  const g=new THREE.Group(),mat=new THREE.MeshStandardMaterial({color:0x070a10,emissive:0x3a1d65,emissiveIntensity:1.4,metalness:.65,roughness:.16});
+  g.userData.vvType='shard';
+  const core=new THREE.Mesh(new THREE.IcosahedronGeometry(.8,0),mat);core.scale.y=1.35;core.castShadow=true;g.add(core);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.9,.05,8,20),new THREE.MeshBasicMaterial({color:0xa98cff,transparent:true,opacity:.75}));ring.rotation.x=Math.PI/2;g.add(ring);
+  return g;
+}
+function makeBoss(){
+  const g=new THREE.Group();g.userData.vvType='boss';
+  const core=new THREE.Mesh(new THREE.DodecahedronGeometry(1.8,1),new THREE.MeshStandardMaterial({color:0x090a10,emissive:0x5f2456,emissiveIntensity:2.2,metalness:.65,roughness:.15}));core.position.y=2.1;core.castShadow=true;g.add(core);
+  for(let i=0;i<4;i++){const arm=new THREE.Mesh(new THREE.BoxGeometry(.28,3.8,.28),new THREE.MeshStandardMaterial({color:0x6f7f96,metalness:.7,roughness:.2}));arm.position.y=2.1;arm.rotation.y=i*Math.PI/2;arm.rotation.z=(i%2?1:-1)*.45;g.add(arm)}
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(2.2,.08,10,48),new THREE.MeshBasicMaterial({color:0xff3d9b,transparent:true,opacity:.7}));ring.rotation.x=Math.PI/2;ring.position.y=2.1;g.add(ring);
+  return g;
+}
+function clearWorld(){for(const m of actors.values())scene.remove(m);for(const m of enemies.values())scene.remove(m);if(bossMesh)scene.remove(bossMesh);actors.clear();enemies.clear();bossMesh=null}
+function syncWorld(s){
+  const ps=s.players||{};
+  for(const [id,m] of actors){if(!ps[id]){scene.remove(m);actors.delete(id)}}
+  Object.values(ps).forEach(p=>{let m=actors.get(p.id);if(!m){m=makeActor(p.hero);actors.set(p.id,m);scene.add(m)}m.position.lerp(new THREE.Vector3(p.x,0,p.z),.6);m.rotation.y=p.yaw||0;m.scale.y=p.downed?.58:1;m.children[2].material.opacity=p.downed?.12:.8});
+  const es=s.enemies||{};
+  for(const [id,m] of enemies){if(!es[id]){scene.remove(m);enemies.delete(id)}}
+  Object.values(es).forEach(e=>{let m=enemies.get(e.id);if(!m){m=makeShard();enemies.set(e.id,m);scene.add(m)}m.position.lerp(new THREE.Vector3(e.x,.75,e.z),.68);m.rotation.y+=.02;m.visible=!e.dead;m.children[0].material.emissiveIntensity=e.vulnerable?2.8:1.2});
+  if(s.boss){if(!bossMesh){bossMesh=makeBoss();scene.add(bossMesh)}bossMesh.position.set(s.boss.x,0,s.boss.z);bossMesh.rotation.y+=.008;bossMesh.visible=!s.boss.dead;bossMesh.children[0].material.emissiveIntensity=s.boss.charging?4:2;bossMesh.children[2].material.color.setHex(s.boss.phase===3?0x58e1ff:0xff3d9b)}else if(bossMesh){scene.remove(bossMesh);bossMesh=null}
+}
+function fmt(sec){sec=Math.max(0,Math.floor(sec));return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')}
+function updateEnd(kind,s){
+  endLayer.classList.remove('hidden');const win=kind==='win';endTitle.textContent=win?'MISSION COMPLETE':'TIMELINE COLLAPSE';endSub.textContent=win?'The Gravity Arbiter is down. Your timeline held.':'The shared Timeline Stability reached zero.';
+  const best=Math.max(Number(localStorage.getItem('vv_best_score')||0),s.score||0);if(win)localStorage.setItem('vv_best_score',String(best));
+  endStats.innerHTML='<div><b>'+Math.floor(s.score||0).toLocaleString()+'</b><span>Score</span></div><div><b>×'+s.multiplier+'</b><span>Max Paradox</span></div><div><b>'+fmt(s.elapsed)+'</b><span>Run Time</span></div><div><b>'+Math.round((s.stability||0)*100)+'%</b><span>Stability Left</span></div><div><b>'+Math.floor(s.timeBonus||0).toLocaleString()+'</b><span>Time Bonus</span></div><div><b>'+s.kills+'</b><span>Shard Kills</span></div><div><b>'+s.revives+'</b><span>Revives</span></div><div><b>'+best.toLocaleString()+'</b><span>Best Run</span></div>';
+  $('vvAgain').style.display=state.role==='host'?'inline-block':'none';$('vvLobby').textContent=state.role==='host'?'ROOM SCREEN':'CLOSE';
+}
+function hideEnd(){endLayer.classList.add('hidden')}
+
+function freshState(){return{phase:'lobby',started:false,elapsed:0,stability:1,score:0,multiplier:1,multTimer:6,heat:0,kills:0,revives:0,players:{},enemies:{},boss:null,wave:0,waveTotal:3,waveDelay:0,plates:[false,false,false],plateCharge:0,plateIndex:0,plateWindow:12,puzzlePerfect:true,objective:'Pick a hero and ready up.',message:'Room created.',timeBonus:0,recentKills:[],abilityWindow:[],over:false,result:null}}
+HOST.state=freshState();
+HOST.conns=HOST.conns||{};
+function spawn(i){return[[-11,5],[-4,8],[4,8],[11,5]][i]||[0,0]}
+function addPlayer(id,name,hero,opt={}){const h=HEROES[hero],p=spawn(Object.keys(HOST.state.players).length);HOST.state.players[id]={id,name:name||'Voyager',hero,x:p[0],y:0,z:p[1],yaw:0,hp:h.hp,maxHp:h.hp,downed:false,downT:0,reviveT:0,frequency:1,signatureCD:0,secondaryCD:0,ultimate:0,input:{},bot:!!opt.bot,pendingBot:false,disconnectedAt:0,lastSeq:-1,aiClock:0,ready:false,lastMiss:-99}}
+function heroTaken(hero,except=''){return Object.values(HOST.state.players).some(p=>p.id!==except&&p.hero===hero)}
+function availableHero(){return HERO_KEYS.find(h=>!heroTaken(h))||'ninja'}
+function humanCount(){return Object.values(HOST.state.players).filter(p=>!p.bot&&!p.pendingBot).length}
+function ensureSoloBots(){if(humanCount()!==1)return;for(const h of HERO_KEYS)if(!heroTaken(h)){addPlayer('bot-'+h,h.toUpperCase()+' AI',h,{bot:true})}}
+function award(base,reason,p,rise=true){const m=HOST.state.multiplier;HOST.state.score+=Math.round(base*m);if(rise)HOST.state.multiplier=Math.min(5,m+1);HOST.state.multTimer=6;if(reason)HOST.state.message=reason+(p?' · '+p.name:'')}
+function breakCombo(){HOST.state.multiplier=Math.max(1,HOST.state.multiplier-1);HOST.state.multTimer=4}
+function stability(delta,reason){HOST.state.stability=Math.max(0,Math.min(1,HOST.state.stability+delta));if(reason)HOST.state.message=reason}
+function living(){return Object.values(HOST.state.players).filter(p=>!p.downed)}
+function closest(p,r){let best=null,bd=r*r;for(const e of Object.values(HOST.state.enemies)){if(e.dead)continue;const d=dist2(p,e);if(d<bd){bd=d;best=e}}return best}
+function kill(e,p,reason='RESONANCE KILL',environmental=false){
+  e.dead=true;HOST.state.kills++;const recent=HOST.state.recentKills.filter(t=>HOST.state.elapsed-t<3);recent.push(HOST.state.elapsed);HOST.state.recentKills=recent;
+  award(e.freq===p.frequency?150:100,reason,p);if(environmental)award(100,'ENVIRONMENTAL KILL',p,false);if(recent.length>1)award(50,'MULTI-KILL',p,false)
+}
+function damageEnemy(e,amt,p,environmental=false){if(!e||e.dead)return false;if(e.freq!==p.frequency){breakCombo();return'shield'}e.vulnerable=true;e.hp-=amt;if(e.hp<=0)kill(e,p,environmental?'VECTOR / ENVIRONMENT KILL':'RESONANCE KILL',environmental);return true}
+function comboAbility(p){const recent=HOST.state.abilityWindow.filter(x=>HOST.state.elapsed-x.t<2&&x.hero!==p.hero);if(recent.length){award(150,'TEAM COMBO',p,false);HOST.state.abilityWindow=[]}HOST.state.abilityWindow.push({t:HOST.state.elapsed,hero:p.hero})}
+function bossDamage(p,amt){
+  const b=HOST.state.boss;if(!b||b.dead)return false;if(b.freq!==p.frequency){breakCombo();return'shield'}
+  b.hp=Math.max(0,b.hp-amt);award(Math.max(1,Math.floor(amt/10)),'ARBITER DAMAGE',p,false);
+  if(b.windowId!==b.brokenWindowId){award(300,'ARBITER FREQUENCY WINDOW BROKEN',p);b.brokenWindowId=b.windowId}
+  if(b.charging&&!b.interrupted){b.interrupted=true;b.charging=false;award(500,'GRAVITY SURGE INTERRUPTED',p)}
+  if(b.hp<=0){b.dead=true;HOST.state.over=true;HOST.state.result='win';HOST.state.phase='complete';HOST.state.timeBonus=Math.floor(Math.max(0,600-HOST.state.elapsed)/10)*100;HOST.state.score+=HOST.state.timeBonus;HOST.state.started=false;showGameEnd('win')}
+  return true
+}
+function heal(p,amt,r){for(const q of Object.values(HOST.state.players))if(!q.downed&&inRange(p,q,r))q.hp=Math.min(q.maxHp,q.hp+amt)}
+function action(p,a){
+  const h=p.hero;
+  if(a==='primary'){
+    let hit=false;
+    if(HOST.state.phase==='boss')hit=bossDamage(p,{ninja:28,prodigy:30,doctor:20,sage:24}[h]);
+    else {const e=closest(p,h==='prodigy'?18:HEROES[h].range+1.2);if(e)hit=damageEnemy(e,{ninja:28,prodigy:34,doctor:20,sage:24}[h],p)}
+    if(!hit&&hit!=='shield'&&HOST.state.elapsed-p.lastMiss>.8){p.lastMiss=HOST.state.elapsed;breakCombo()}
+  }
+  if(a==='secondary'&&p.secondaryCD<=0){
+    p.secondaryCD={ninja:4,prodigy:6,doctor:4,sage:5}[h];comboAbility(p);
+    if(h==='ninja'){const f={x:p.x-Math.sin(p.yaw)*5,z:p.z-Math.cos(p.yaw)*5};p.x=Math.max(-24,Math.min(24,f.x));p.z=Math.max(-20,Math.min(22,f.z));const e=closest(p,4);if(e)damageEnemy(e,40,p)}
+    if(h==='prodigy'){const e=closest(p,20);if(e){e.hp-=24;e.vulnerable=true;if(e.hp<=0)kill(e,p,'TURRET FINISH')}}
+    if(h==='doctor'){heal(p,40,6);const e=closest(p,4);if(e)damageEnemy(e,16,p)}
+    if(h==='sage')for(const e of Object.values(HOST.state.enemies))if(!e.dead&&inRange(p,e,7)){e.t=0;e.vulnerable=true}
+  }
+  if(a==='signature'&&p.signatureCD<=0){
+    p.signatureCD={ninja:7,prodigy:7,doctor:9,sage:8}[h];comboAbility(p);
+    if(h==='ninja'){const f={x:p.x-Math.sin(p.yaw)*8,z:p.z-Math.cos(p.yaw)*8};p.x=Math.max(-24,Math.min(24,f.x));p.z=Math.max(-20,Math.min(22,f.z));const e=closest(p,7);if(e)damageEnemy(e,70,p)}
+    if(h==='prodigy')for(const e of Object.values(HOST.state.enemies))if(!e.dead&&inRange(p,e,9)){e.x+=(e.x-p.x)*.6;e.z+=(e.z-p.z)*.6;damageEnemy(e,36,p,true)}
+    if(h==='doctor'){heal(p,75,8);for(const e of Object.values(HOST.state.enemies))if(!e.dead&&inRange(p,e,8))damageEnemy(e,32,p)}
+    if(h==='sage')for(const e of Object.values(HOST.state.enemies))if(!e.dead&&inRange(p,e,10)){e.t+=4;e.vulnerable=true;damageEnemy(e,25,p)}
+  }
+  if(a==='ultimate'&&p.ultimate>=100){
+    p.ultimate=0;comboAbility(p);
+    if(h==='ninja'){if(HOST.state.boss&&!HOST.state.boss.dead)bossDamage(p,180);for(const e of Object.values(HOST.state.enemies))if(!e.dead&&inRange(p,e,12))damageEnemy(e,100,p)}
+    if(h==='prodigy'){for(const e of Object.values(HOST.state.enemies))if(!e.dead)damageEnemy(e,110,p,true);if(HOST.state.boss&&!HOST.state.boss.dead)bossDamage(p,150)}
+    if(h==='doctor'){heal(p,120,10);stability(.08,'Genesis Field restored Timeline Stability');if(HOST.state.boss&&!HOST.state.boss.dead)bossDamage(p,100)}
+    if(h==='sage'){for(const e of Object.values(HOST.state.enemies))if(!e.dead&&inRange(p,e,12))damageEnemy(e,90,p);if(HOST.state.boss&&!HOST.state.boss.dead)bossDamage(p,135)}
+  }
+  if(a==='relay'){
+    const alive=living();if(alive.length>=2&&HOST.state.heat<.9){HOST.state.heat=Math.min(1,HOST.state.heat+.2);const perfect=alive.length===4;award(perfect?1000:400,perfect?'PERFECT ENTANGLEMENT':'QUANTUM RELAY',p);alive.forEach(q=>q.ultimate=Math.min(100,q.ultimate+20));for(const e of Object.values(HOST.state.enemies))if(!e.dead&&alive.some(q=>inRange(q,e,12)))damageEnemy(e,55,p);if(HOST.state.boss&&!HOST.state.boss.dead)bossDamage(p,perfect?240:120)}else breakCombo()
+  }
+}
+function revive(p){const q=Object.values(HOST.state.players).find(q=>q.id!==p.id&&q.downed&&inRange(p,q,4.2));if(!q)return;q.reviveT=(q.reviveT||0)+.05*(p.hero==='doctor'?1.7:1);if(q.reviveT>=2){q.downed=false;q.reviveT=0;q.hp=Math.max(45,Math.floor(q.maxHp*.42));HOST.state.revives++;award(250,'TEAMMATE REVIVED',p)}}
+function botAI(p){
+  const enemiesNow=Object.values(HOST.state.enemies).filter(e=>!e.dead);
+  if(HOST.state.phase==='puzzle'){const pts=[[-7,-3],[7,-3],[0,9]],t=pts[Math.min(2,HOST.state.plateIndex)];p.yaw=Math.atan2(-(t[0]-p.x),-(t[1]-p.z));p.input.mx=Math.max(-1,Math.min(1,(t[0]-p.x)/4));p.input.my=Math.max(-1,Math.min(1,(t[1]-p.z)/4));return}
+  if(HOST.state.phase==='boss'&&HOST.state.boss){const b=HOST.state.boss;p.frequency=b.freq;p.yaw=Math.atan2(-(b.x-p.x),-(b.z-p.z));const d=Math.sqrt(dist2(p,b));p.input.mx=0;p.input.my=d>7?1:.2;if(d<9)p.input.primary=true;if(p.secondaryCD<=0&&Math.random()<.08)p.input.secondary=true;if(p.signatureCD<=0&&Math.random()<.05)p.input.signature=true;if(p.ultimate>=100)p.input.ultimate=true;if(Math.random()<.03)p.input.revive=true;return}
+  if(!enemiesNow.length)return;const e=enemiesNow.reduce((a,b)=>dist2(p,a)<dist2(p,b)?a:b);p.frequency=e.freq;p.yaw=Math.atan2(-(e.x-p.x),-(e.z-p.z));const d=Math.sqrt(dist2(p,e));p.input.mx=0;p.input.my=d>4?1:0;p.input.sprint=d>10;if(d<7)p.input.primary=true;if(p.secondaryCD<=0&&Math.random()<.05)p.input.secondary=true;if(p.signatureCD<=0&&Math.random()<.035)p.input.signature=true;if(p.ultimate>=100)p.input.ultimate=true;
+}
+function move(p,dt){
+  if(p.downed)return;const h=HEROES[p.hero],inp=p.input||{},len=Math.hypot(inp.mx||0,inp.my||0)||1;let mx=(inp.mx||0)/len,my=(inp.my||0)/len,sp=h.speed*(inp.sprint?1.25:1);
+  if(HOST.state.boss?.phase===2)sp*=.68;if(HOST.state.boss?.phase===3){mx=-mx;my=-my}const cs=Math.cos(p.yaw),sn=Math.sin(p.yaw);p.x+=(sn*mx+cs*my)*sp*dt;p.z+=(cs*mx-sn*my)*sp*dt;p.x=Math.max(-24,Math.min(24,p.x));p.z=Math.max(-20,Math.min(22,p.z))
+}
+function processPlayer(p,dt){
+  p.secondaryCD=Math.max(0,p.secondaryCD-dt);p.signatureCD=Math.max(0,p.signatureCD-dt);
+  if(p.downed){p.downT-=dt;if(p.downT<=0){p.downed=false;p.hp=Math.max(1,Math.floor(p.maxHp*.45));p.x=0;p.z=0;stability(-.15,p.name+' expired from Fracture State');breakCombo()}return}
+  if(p.bot)botAI(p);move(p,dt);const i=p.input||{};
+  if(i.tune){p.frequency=p.frequency%4+1;i.tune=false}
+  if(i.revive){revive(p);i.revive=false}
+  if(i.primary){action(p,'primary');if(!p.bot)i.primary=false}
+  for(const a of ['secondary','signature','ultimate','relay'])if(i[a]){action(p,a);i[a]=false}
+  p.hp=Math.min(p.maxHp,p.hp+dt*.7);p.ultimate=Math.min(100,p.ultimate+dt*1.8)
+}
+function enemyAI(dt){
+  const alive=living();if(!alive.length)return;
+  for(const e of Object.values(HOST.state.enemies)){if(e.dead)continue;e.t-=dt;if(e.t<=0){e.freq=e.freq%4+1;e.t=4+Math.random()*2;e.vulnerable=false}const target=alive.reduce((a,b)=>dist2(e,a)<dist2(e,b)?a:b);const d=Math.sqrt(dist2(e,target));if(d>2.3){e.x+=(target.x-e.x)/Math.max(d,.001)*dt*.95;e.z+=(target.z-e.z)/Math.max(d,.001)*dt*.95}else if(Math.random()<dt*.6&&!target.downed){target.hp-=9;if(target.hp<=0){target.hp=0;target.downed=true;target.downT=12;target.reviveT=0;breakCombo();HOST.state.message=target.name+' entered Fracture State.'}}}
+}
+function spawnWave(w){HOST.state.enemies={};const n=5+w*2;for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,r=15+Math.random()*14,id='W'+w+'-'+i;HOST.state.enemies[id]={id,x:Math.cos(a)*r,z:Math.sin(a)*r,hp:75+w*15,maxHp:75+w*15,freq:1+((i+w)%4),vulnerable:false,dead:false,t:2+Math.random()*3}}}
+function beginPuzzle(){HOST.state.phase='puzzle';HOST.state.plates=[false,false,false];HOST.state.plateCharge=0;HOST.state.plateIndex=0;HOST.state.plateWindow=12;HOST.state.puzzlePerfect=true;HOST.state.objective='Charge all three resonance plates. Each plate requires at least two living players standing on it at once.';HOST.state.message='RESONANCE LOCK'}
+function beginBoss(){HOST.state.phase='boss';HOST.state.boss={x:0,z:6,hp:1800,maxHp:1800,freq:1,phase:1,timer:0,dead:false,charging:false,windowId:1,brokenWindowId:0,interrupted:false};HOST.state.objective='Tune to the Arbiter frequency, interrupt gravity surges, and destroy its core.';HOST.state.message='GRAVITY ARBITER ONLINE'}
+function tickPuzzle(dt){
+  const pts=[[-7,-3],[7,-3],[0,9]],t=pts[HOST.state.plateIndex];if(!t){beginBoss();return}
+  const on=Object.values(HOST.state.players).filter(p=>!p.downed&&inRange(p,{x:t[0],z:t[1]},2.6));
+  if(on.length>=2){
+    HOST.state.plateCharge+=dt;
+    if(HOST.state.plateCharge>=1.5){
+      HOST.state.plates[HOST.state.plateIndex]=true;
+      on.slice(0,2).forEach(p=>award(100,'RESONANCE PLATE CHARGED',p));
+      HOST.state.plateIndex++;
+      HOST.state.plateCharge=0;
+      HOST.state.plateWindow=12;
+      if(HOST.state.plateIndex>=3){
+        award(1000,'RESONANCE LOCK COMPLETE',on[0]);
+        if(HOST.state.puzzlePerfect)award(500,'CLEAN PLATE RUN',on[0],false);
+        beginBoss();
+      }else HOST.state.message='Plate '+HOST.state.plateIndex+' online. Two players required.';
+    }
+  }else{
+    if(HOST.state.plateCharge>.1)HOST.state.puzzlePerfect=false;
+    HOST.state.plateCharge=Math.max(0,HOST.state.plateCharge-dt*.5);
+  }
+  HOST.state.plateWindow-=dt;if(HOST.state.plateWindow<=0&&HOST.state.plateIndex>0&&HOST.state.plateIndex<3){HOST.state.plateIndex=0;HOST.state.plates=[false,false,false];HOST.state.plateCharge=0;HOST.state.plateWindow=12;HOST.state.puzzlePerfect=true;HOST.state.message='Resonance window lost. Restart the sequence.'}
+}
+function bossAI(dt){
+  const b=HOST.state.boss;if(!b||b.dead)return;b.timer+=dt;b.charging=b.timer>2.4&&b.timer<3.5&&!b.interrupted;
+  if(b.timer>7){b.timer=0;b.interrupted=false;b.freq=b.freq%4+1;b.phase=b.phase%3+1;b.windowId++;stability(-.05,'Gravity shift · Arbiter resonance F'+b.freq)}
+  if(b.timer>3.5&&b.timer<3.65&&!b.interrupted)for(const p of Object.values(HOST.state.players))if(!p.downed&&inRange(p,b,7)){p.hp-=28;if(p.hp<=0){p.hp=0;p.downed=true;p.downT=12}}
+}
+function startRun(){
+  if(HOST.state.started)return;ensureSoloBots();HOST.state.started=true;HOST.state.phase='shards';HOST.state.elapsed=0;HOST.state.stability=1;HOST.state.score=0;HOST.state.multiplier=1;HOST.state.multTimer=6;HOST.state.heat=0;HOST.state.kills=0;HOST.state.revives=0;HOST.state.wave=1;HOST.state.objective='Destroy the Fractured Shards. Use Q to match their frequency before attacking.';HOST.state.message='SHARD WAVE 1';spawnWave(1);state.started=true;hideEnd();broadcast()}
+function win(){if(HOST.state.over)return;HOST.state.over=true;HOST.state.result='win';HOST.state.phase='complete';HOST.state.timeBonus=Math.floor(Math.max(0,600-HOST.state.elapsed)/10)*100;HOST.state.score+=HOST.state.timeBonus;HOST.state.started=false;showGameEnd('win')}
+function lose(reason){if(HOST.state.over)return;HOST.state.over=true;HOST.state.result='lose';HOST.state.phase='failed';HOST.state.objective='Timeline Stability collapsed.';HOST.state.message=reason||'TIMELINE COLLAPSE';HOST.state.started=false;showGameEnd('lose')}
+function tick(dt){
+  const s=HOST.state;if(!s?.started||s.over)return;s.elapsed+=dt;s.heat=Math.max(0,s.heat-dt*.03);s.multTimer-=dt;if(s.multTimer<=0){s.multTimer=6;if(s.multiplier>1)s.multiplier--}
+  for(const p of Object.values(s.players))processPlayer(p,dt);
+  if(s.phase==='shards'){enemyAI(dt);if(!Object.values(s.enemies).some(e=>!e.dead)){if(s.wave<s.waveTotal){if(s.waveDelay<=0){s.waveDelay=2.5;s.message='WAVE '+s.wave+' CLEARED';award(250,'WAVE CLEAR',Object.values(s.players)[0],false)}else{s.waveDelay-=dt;if(s.waveDelay<=0){s.wave++;spawnWave(s.wave);s.message='SHARD WAVE '+s.wave}}}else beginPuzzle()}}
+  else if(s.phase==='puzzle')tickPuzzle(dt);
+  else if(s.phase==='boss'){enemyAI(dt);bossAI(dt)}
+  if(s.heat>=1){s.heat=.72;breakCombo();stability(-.03,'Quantum overload destabilized the team')}
+  if(s.stability<=0)lose('TIMELINE STABILITY REACHED ZERO');
+}
+function compact(){
+  const s=HOST.state;return{phase:s.phase,started:s.started,elapsed:s.elapsed,stability:s.stability,score:s.score,multiplier:s.multiplier,heat:s.heat,kills:s.kills,revives:s.revives,timeBonus:s.timeBonus,objective:s.objective,message:s.message,wave:s.wave,waveTotal:s.waveTotal,plates:[...s.plates],plateIndex:s.plateIndex,plateCharge:s.plateCharge,over:s.over,result:s.result,players:Object.fromEntries(Object.values(s.players).map(p=>[p.id,{...p,input:undefined}])),enemies:Object.fromEntries(Object.values(s.enemies).map(e=>[e.id,{...e}])),boss:s.boss?{...s.boss}:null}}
+function send(c,m){try{if(c?.open)c.send(m)}catch(e){}}
+function broadcast(){const s=compact();state.hostState=s;for(const c of Object.values(HOST.conns||{}))send(c,{t:'state',s});render(s)}
+function showGameEnd(kind){state.started=false;broadcast();updateEnd(kind,compact())}
+function resetRunKeepRoster(){const roster=Object.values(HOST.state.players).map(p=>({id:p.id,name:p.name.replace(/ AI$/,''),hero:p.hero,bot:p.bot}));clearWorld();HOST.state=freshState();HOST.conns=HOST.conns||{};for(const r of roster)addPlayer(r.id,r.name,r.hero,{bot:r.bot});HOST.state.players[state.selfId].ready=true;startRun()}
+
+function hostData(c,m){
+  if(!m)return;
+  if(m.t==='hello'){if(Object.keys(HOST.state.players).filter(id=>!HOST.state.players[id].bot).length>=4){send(c,{t:'reject',reason:'Room is full.'});return}const hero=m.hero&&HEROES[m.hero]&&!heroTaken(m.hero)?m.hero:availableHero();addPlayer(c.peer,m.name||'Voyager',hero);HOST.conns[c.peer]=c;c.send({t:'welcome',room:state.room,id:c.peer,hero});broadcast();return}
+  const p=HOST.state.players[c.peer];if(!p)return;
+  if(m.t==='input'&&Number(m.seq||0)>=p.lastSeq){p.lastSeq=Number(m.seq||0);p.input=Object.assign(p.input||{},m.input||{});if(m.input?.yaw!==undefined)p.yaw=Number(m.input.yaw)}
+  else if(m.t==='hero'&&!HOST.state.started&&HEROES[m.hero]&&!heroTaken(m.hero,p.id))p.hero=m.hero;
+  else if(m.t==='ready')p.ready=!!m.value;
+  broadcast();
+}
+function setupHost(){
+  state.role='host';state.name=ui.name.value.trim()||'Voyager';state.room=code();ui.roomLine.classList.remove('hidden');ui.roomCode.textContent=state.room;ui.roomInput.value=state.room;
+  peer=new Peer(state.room,{config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});state.peer=peer;
+  peer.on('open',id=>{state.selfId=id;HOST.state=freshState();addPlayer(id,state.name,state.selectedHero);HOST.state.players[id].ready=true;setStatus('Room '+state.room+' is live. Share the code with your team.');openSelect(true);broadcast()});
+  peer.on('connection',c=>{c.on('open',()=>send(c,{t:'welcome',room:state.room,hero:HOST.state.players[state.selfId]?.hero||'ninja'}));c.on('data',m=>hostData(c,m));c.on('close',()=>{const p=HOST.state.players[c.peer];if(p&&!p.bot){p.pendingBot=true;p.disconnectedAt=clockNow();HOST.state.message=p.name+' disconnected. AI takeover in 5 seconds.';setStatus(p.name+' disconnected. AI takeover in 5 seconds.')}delete HOST.conns[c.peer];broadcast()})});
+  peer.on('error',e=>setStatus('Peer error: '+e.type+'. Check the room code or host connection.'));
+}
+function setupGuest(){
+  state.role='guest';state.name=ui.name.value.trim()||'Voyager';state.room=ui.roomInput.value.trim().toUpperCase();if(!/^[A-Z0-9]{6}$/.test(state.room)){setStatus('Enter a six-character room code.');return}
+  peer=new Peer({config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});state.peer=peer;
+  peer.on('open',id=>{state.selfId=id;const c=peer.connect(state.room,{reliable:true});hostConn=c;state.connections.set('host',c);c.on('open',()=>{send(c,{t:'hello',name:state.name,hero:state.selectedHero});setStatus('Connected. Choose your hero.')});c.on('data',m=>{if(m.t==='welcome'){openSelect(false)}if(m.t==='state'){state.hostState=m.s;render(m.s);if(m.s.started)showGameUI();if(m.s.over)updateEnd(m.s.result==='win'?'win':'lose',m.s)}});c.on('close',()=>{state.started=false;endTitle.textContent='HOST DISCONNECTED';endSub.textContent='The room authority ended the peer connection.';endStats.innerHTML='';endLayer.classList.remove('hidden');$('vvAgain').style.display='none';$('vvLobby').textContent='CLOSE'})});
+  peer.on('error',e=>setStatus('Join failed: '+e.type+'. Check the code and try again.'));
+}
+function openSelect(host){ui.lobby.style.display='none';ui.heroSelect.style.display='flex';ui.heroStatus.textContent=host?'Host: choose your hero, then start the run.':'Choose an available hero. The host controls the mission start.';renderSelect()}
+function renderSelect(){
+  const roster=state.hostState?.players||HOST.state.players;ui.rosterCount.textContent=Object.keys(roster||{}).length+' / 4';ui.heroCards.innerHTML='';
+  for(const k of HERO_KEYS){const h=HEROES[k],taken=Object.values(roster||{}).some(p=>p.id!==state.selfId&&p.hero===k);const d=document.createElement('div');d.className='card'+(state.selectedHero===k?' selected':'')+(taken?' taken':'');d.innerHTML='<div class="pickDot"></div><div class="heroAccent" style="color:'+h.accent+'">'+h.label+'</div><h3>'+h.role.split(' / ')[0]+'</h3><div class="role">'+h.role+'</div><div class="ability"><b>Primary</b> '+h.primary+'<br><b>Secondary</b> '+h.secondary+'<br><b>Signature</b> '+h.signature+'<br><b>Ultimate</b> '+h.ultimate+'</div>'+(taken?'<div class="mini" style="margin-top:7px;color:#ff8ea9">TAKEN</div>':'');if(!taken)d.addEventListener('click',()=>{state.selectedHero=k;renderSelect()});ui.heroCards.appendChild(d)}
+}
+ui.create.addEventListener('click',setupHost);ui.join.addEventListener('click',setupGuest);
+ui.ready.addEventListener('click',()=>{if(state.role==='host'){const p=HOST.state.players[state.selfId];p.hero=state.selectedHero;p.ready=true;ui.heroStatus.textContent='Ready as '+HEROES[p.hero].label+'. Start the mission when ready.';ui.ready.textContent='START MISSION';ui.ready.onclick=startRun;broadcast()}else{send(hostConn,{t:'hero',hero:state.selectedHero});send(hostConn,{t:'ready',value:true});ui.heroStatus.textContent='Ready as '+HEROES[state.selectedHero].label+'. Waiting for host…'}});
+
+function sendInput(){
+  if(!state.started)return;
+  if(state.role==='guest'){seq++;const payload={...state.localInput};send(hostConn,{t:'input',seq,input:payload});for(const a of['secondary','signature','ultimate','relay','tune','revive'])state.localInput[a]=false}
+  else {const p=HOST.state.players[state.selfId];if(!p)return;p.input=Object.assign(p.input||{},state.localInput);p.yaw=state.localInput.yaw;for(const a of['secondary','signature','ultimate','relay','tune','revive'])state.localInput[a]=false}
+}
+setInterval(sendInput,50);
+function showGameUI(){ui.heroSelect.style.display='none';ui.hud.style.display='block';ui.mobile.style.display='block';state.started=true}
+function render(s){
+  if(!s)return;syncWorld(s);const me=s.players?.[state.selfId];if(me){ui.freqText.textContent=me.frequency;const h=HEROES[me.hero];$('primaryName').textContent=h.primary;$('secondaryName').textContent=h.secondary;$('signatureName').textContent=h.signature}
+  ui.stabilityFill.style.width=Math.round(s.stability*100)+'%';ui.stabilityText.textContent=s.stability>.7?'STABLE':s.stability>.4?'FLICKERING':'COLLAPSE IMMINENT';ui.multText.textContent='×'+s.multiplier;ui.heatText.textContent='HEAT '+Math.round(s.heat*100)+'%';
+  ui.party.innerHTML=Object.values(s.players||{}).map(p=>'<div class="partyRow"><span class="partyDot '+(p.downed?'down':'live')+'"></span><span>'+esc(p.name)+' <span class="mini">'+HEROES[p.hero].label+(p.bot?' · AI':'')+(p.pendingBot?' · RECONNECTING':'')+'</span></span><span class="mini">'+Math.ceil(Math.max(0,p.hp))+'/'+p.maxHp+'</span></div>').join('');
+  const names={shards:'1 / 3 · SHARD WAVES',puzzle:'2 / 3 · RESONANCE LOCK',boss:'3 / 3 · GRAVITY ARBITER',complete:'COMPLETE',failed:'FAILED',lobby:'LOBBY'};phaseEl.textContent=names[s.phase]||s.phase.toUpperCase();timeEl.textContent=fmt(s.elapsed);scoreEl.textContent=Math.floor(s.score||0).toLocaleString();
+  ui.objectiveText.textContent=s.objective||s.message||'';ui.objectiveTitle.textContent=s.phase==='shards'?'THE SNOWY RIDGE':s.phase==='puzzle'?'RESONANCE LOCK':s.phase==='boss'?'GRAVITY ARBITER':'VOID VOYAGE';ui.boss.style.display=s.phase==='boss'?'block':'none';
+  if(s.boss){ui.bossFill.style.width=Math.round(100*s.boss.hp/s.boss.maxHp)+'%';ui.bossPhase.textContent='GRAVITY PHASE · '+(s.boss.phase===1?'1G':s.boss.phase===2?'10G':'INVERSION')+' · RESONANCE F'+s.boss.freq+(s.boss.charging?' · SURGE CHARGING':'')}
+  const near=me&&!me.downed&&Object.values(s.players||{}).some(p=>p.id!==me.id&&p.downed&&dist2(p,me)<18);reviveBtn.style.display=near?'block':'none';
+  if(s.over)showGameEnd(s.result==='win'?'win':'lose');
+}
+function showGameEnd(kind){updateEnd(kind,state.hostState||HOST.state)}
+reviveBtn.addEventListener('pointerdown',()=>state.localInput.revive=true);
+$('aPrimary').onclick=()=>state.localInput.primary=true;$('aSecondary').onclick=()=>state.localInput.secondary=true;$('aSignature').onclick=()=>state.localInput.signature=true;$('aUltimate').onclick=()=>state.localInput.ultimate=true;$('aRelay').onclick=()=>state.localInput.relay=true;
+
+const keys={};
+window.addEventListener('keydown',e=>{if(document.activeElement===ui.name||document.activeElement===ui.roomInput)return;keys[e.code]=true;if(e.code==='KeyQ')state.localInput.tune=true;if(e.code==='KeyE')state.localInput.secondary=true;if(e.code==='KeyR')state.localInput.signature=true;if(e.code==='KeyX')state.localInput.ultimate=true;if(e.code==='KeyZ')state.localInput.relay=true;if(e.code==='KeyF')state.localInput.revive=true});
+window.addEventListener('keyup',e=>keys[e.code]=false);
+setInterval(()=>{if(!state.started)return;const mx=(keys.KeyD?1:0)-(keys.KeyA?1:0),my=(keys.KeyW?1:0)-(keys.KeyS?1:0);if(mx||my){state.localInput.mx=mx;state.localInput.my=my}else if(!('ontouchstart' in window)){state.localInput.mx=0;state.localInput.my=0}state.localInput.sprint=!!keys.ShiftLeft;if(keys.Space)state.localInput.primary=true},40);
+
+document.querySelectorAll('.mobileBtn:not(.vvRevive)').forEach(b=>b.addEventListener('pointerdown',()=>{if(b.dataset.act)state.localInput[b.dataset.act]=true}));
+
+document.addEventListener('pointerdown',e=>{if(e.target.id==='gameCanvas'&&e.pointerType==='mouse'&&e.button===0)state.localInput.primary=true});
+
+setInterval(()=>{if(state.role!=='host'||!HOST.state)return;for(const p of Object.values(HOST.state.players))if(p.pendingBot&&p.disconnectedAt&&clockNow()-p.disconnectedAt>=5){p.pendingBot=false;p.bot=true;p.name=p.name+' AI';p.input={};HOST.state.message=p.name+' has been taken over by AI.';broadcast()}},250);
+
+setInterval(()=>{if(state.role!=='host'||!HOST.state.started)return;const t=clockNow(),dt=Math.min(.06,t-lastTick);lastTick=t;tick(dt);if(Math.floor(HOST.state.elapsed*10)%5===0)broadcast();else state.hostState=compact();render(state.hostState)},50);
+
+setInterval(()=>{const s=state.hostState||HOST.state,me=s?.players?.[state.selfId];if(!me)return;const target=new THREE.Vector3(me.x,2.45,me.z),behind=new THREE.Vector3(Math.sin(me.yaw)*7,4.3,Math.cos(me.yaw)*7);camera.position.lerp(target.clone().add(behind),.16);camera.lookAt(target)},30);
+
+$('vvAgain').addEventListener('click',()=>{if(state.role==='host')resetRunKeepRoster()});
+$('vvLobby').addEventListener('click',()=>{if(state.role==='host'){hideEnd();ui.hud.style.display='none';ui.heroSelect.style.display='flex';renderSelect()}else location.reload()});
+
+setStatus('Core-loop slice loaded. Create or join a room.');
+})();
+</script>
+</body>
+</html>
