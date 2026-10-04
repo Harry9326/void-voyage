@@ -52,7 +52,7 @@ canvas{display:block;width:100%;height:100%}
 
   <div id="heroSelect">
     <div class="heroPanel">
-      <div class="heroHead"><div><h2>Choose your Resonance</h2><p id="heroModeText">Select one hero. Each room can field one of each.</p></div><div id="rosterCount" class="tiny">0 / 4</div></div>
+      <div class="heroHead"><div><h2>Choose your Resonance</h2><p id="heroModeText">Select one hero. Each room can field one of each.</p></div><div style="text-align:right"><div id="heroRoomCode" class="roomPickCode">ROOM <strong>------</strong></div><div id="rosterCount" class="tiny">0 / 4</div></div></div>
       <div class="cards" id="heroCards"></div>
       <div class="heroFoot"><div class="tiny" id="heroStatus">Your selection stays available until the host starts the slice.</div><button class="btn primary" id="readyBtn">Lock Hero & Ready</button></div>
     </div>
@@ -89,7 +89,7 @@ canvas{display:block;width:100%;height:100%}
   <div id="fade"></div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
 <script>
 (function(){
@@ -104,7 +104,7 @@ const HEROES={
 const HERO_KEYS=Object.keys(HEROES);
 const state={role:null,room:'',peer:null,connections:new Map(),selfId:'',hero:'ninja',name:'Voyager',started:false,selectedHero:'ninja',localInput:{mx:0,my:0,yaw:0,primary:false,secondary:false,signature:false,ultimate:false,relay:false,tune:false,revive:false,sprint:false},lastSent:0,seq:0,ready:false,hostState:null,remotePlayers:{}};
 
-const els={lobby:gid('lobby'),heroSelect:gid('heroSelect'),hud:gid('hud'),create:gid('createBtn'),join:gid('joinBtn'),name:gid('name'),roomInput:gid('roomInput'),roomLine:gid('roomLine'),roomCode:gid('roomCode'),status:gid('lobbyStatus'),heroCards:gid('heroCards'),ready:gid('readyBtn'),heroStatus:gid('heroStatus'),rosterCount:gid('rosterCount'),roomHudCode:gid('roomHudCode'),party:gid('party'),objectiveTitle:gid('objectiveTitle'),objectiveText:gid('objectiveText'),freqText:gid('freqText'),multText:gid('multText'),heatText:gid('heatText'),stabilityFill:gid('stabilityFill'),stabilityText:gid('stabilityText'),boss:gid('boss'),bossFill:gid('bossFill'),bossPhase:gid('bossPhase'),toast:gid('toast'),toastTitle:gid('toastTitle'),toastText:gid('toastText'),primaryName:gid('primaryName'),secondaryName:gid('secondaryName'),signatureName:gid('signatureName')};
+const els={lobby:gid('lobby'),heroSelect:gid('heroSelect'),hud:gid('hud'),create:gid('createBtn'),join:gid('joinBtn'),name:gid('name'),roomInput:gid('roomInput'),roomLine:gid('roomLine'),roomCode:gid('roomCode'),status:gid('lobbyStatus'),heroCards:gid('heroCards'),ready:gid('readyBtn'),heroStatus:gid('heroStatus'),rosterCount:gid('rosterCount'),heroRoomCode:gid('heroRoomCode'),roomHudCode:gid('roomHudCode'),party:gid('party'),objectiveTitle:gid('objectiveTitle'),objectiveText:gid('objectiveText'),freqText:gid('freqText'),multText:gid('multText'),heatText:gid('heatText'),stabilityFill:gid('stabilityFill'),stabilityText:gid('stabilityText'),boss:gid('boss'),bossFill:gid('bossFill'),bossPhase:gid('bossPhase'),toast:gid('toast'),toastTitle:gid('toastTitle'),toastText:gid('toastText'),primaryName:gid('primaryName'),secondaryName:gid('secondaryName'),signatureName:gid('signatureName')};
 function gid(x){return document.getElementById(x)}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function logStatus(s){els.status.textContent=s}
@@ -206,10 +206,10 @@ function guestJoin(){
 function guestData(msg){if(!msg)return;if(msg.t==='welcome'){if(msg.accepted===false){logStatus('Room rejected this hero. Pick another.');return}state.hostState=msg.roster;showHeroSelect(false);updateHud(msg.roster);logStatus('Connected to '+msg.room+'.');}else if(msg.t==='reject'){logStatus(msg.reason||'Join rejected.')}else if(msg.t==='state'){state.hostState=msg.s;updateHud(msg.s);if(msg.s.started)startGameUI(msg.s)}}
 function sendToHost(msg){const c=state.role==='guest'?state.connections.get('host'):null;if(c&&c.open)try{c.send(msg)}catch(e){}}
 
-function showHeroSelect(host){els.lobby.style.display='none';els.heroSelect.style.display='flex';els.heroModeText.textContent=host?'Host selection. Once everyone is connected, the host starts the slice.':'Guest selection. Choose an available hero, then ready up.';renderHeroCards();if(!state.peer)return}
+function showHeroSelect(host){els.lobby.style.display='none';els.heroSelect.style.display='flex';els.heroModeText.textContent=host?'Host selection. Once everyone is connected, the host starts the slice.':'Guest selection. Choose an available hero, then ready up.';if(els.heroRoomCode)els.heroRoomCode.innerHTML='ROOM <strong>'+esc(state.room||'------')+'</strong>';renderHeroCards();if(!state.peer)return}
 function startGameUI(s){if(state.started)return;state.started=true;els.heroSelect.style.display='none';els.hud.style.display='block';els.mobile.style.display='block';els.boss.style.display=s.phase==='boss'?'block':'none';showToast('THE HIMALAYAS','Four signals. One fracture.');}
 function hostStart(){HOST.state.started=true;HOST.state.phase='shards';HOST.state.objective='Destroy the Fractured Shards. When the resonance nodes are lit, stand on all three plates to open the Arbiter gate.';HOST.state.message='Destroy the Fractured Shards.';for(const c of state.connections.values())try{c.send({t:'state',s:hostSnapshot()})}catch(e){}startGameUI(hostSnapshot());}
-function updateHud(s){if(!s)return;const me=s.players?.[state.selfId];els.roomHudCode.textContent=state.room||'------';els.multText.textContent='×'+Math.max(1,Math.round(s.combo*10)/10).toFixed(1).replace('.0','');els.heatText.textContent='HEAT '+Math.round(s.heat*100)+'%';if(me){els.freqText.textContent=me.frequency;const h=HEROES[me.hero];els.primaryName.textContent=h.primary;els.secondaryName.textContent=h.secondary;els.signatureName.textContent=h.signature;}
+function updateHud(s){if(!s)return;const me=s.players?.[state.selfId];els.roomHudCode.textContent=state.room||'------';if(els.heroRoomCode)els.heroRoomCode.innerHTML='ROOM <strong>'+esc(state.room||'------')+'</strong>';els.multText.textContent='×'+Math.max(1,Math.round(s.combo*10)/10).toFixed(1).replace('.0','');els.heatText.textContent='HEAT '+Math.round(s.heat*100)+'%';if(me){els.freqText.textContent=me.frequency;const h=HEROES[me.hero];els.primaryName.textContent=h.primary;els.secondaryName.textContent=h.secondary;els.signatureName.textContent=h.signature;}
 els.stabilityFill.style.width=(s.stability*100)+'%';els.stabilityText.textContent=s.stability>.7?'STABLE':s.stability>.4?'FLICKERING':'COLLAPSE IMMINENT';els.party.innerHTML=Object.values(s.players||{}).map(p=>'<div class="partyRow"><span class="partyDot '+(p.downed?'down':'live')+'"></span><span>'+esc(p.name)+' <span class="mini">'+HEROES[p.hero].label+'</span></span><span class="mini">'+Math.ceil(Math.max(0,p.hp))+'/'+p.maxHp+'</span></div>').join('');els.objectiveText.textContent=s.objective||s.message||'';els.objectiveTitle.textContent=s.phase==='shards'?'THE CRACK — HIMALAYAS':s.phase==='puzzle'?'RESONANCE LOCK':'GRAVITY ARBITER';els.boss.style.display=s.phase==='boss'?'block':'none';if(s.boss){els.bossFill.style.width=(100*s.boss.hp/s.boss.maxHp)+'%';els.bossPhase.textContent='GRAVITY PHASE · '+(s.boss.phase===1?'1G':s.boss.phase===2?'10G':'INVERSION')+' · RESONANCE F'+s.boss.freq}}
 
 els.create.addEventListener('click',()=>{if(!init3D())return;setupHost()});
