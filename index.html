@@ -130,6 +130,7 @@ function init3D(){
   [[-7,-3],[7,-3],[0,9]].forEach((p,i)=>{const plate=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.2,.18,16),new THREE.MeshStandardMaterial({color:0x1a3149,emissive:0x112844,emissiveIntensity:.7,roughness:.7}));plate.position.set(p[0],.12,p[1]);plate.userData.id=i;scene.add(plate);const ring=new THREE.Mesh(new THREE.TorusGeometry(2.1,.08,8,32),new THREE.MeshBasicMaterial({color:0x58e1ff,transparent:true,opacity:.25}));ring.rotation.x=Math.PI/2;ring.position.copy(plate.position);ring.userData.id=i;scene.add(ring)});
   clock=new THREE.Clock();window.addEventListener('resize',onResize);animate();return true
 }
+const threeReady=init3D();
 function onResize(){if(!renderer)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.75))}
 function makeActor(hero){const h=HEROES[hero];const g=new THREE.Group();const body=new THREE.Mesh(new THREE.CylinderGeometry(.38,.48,1.25,8),new THREE.MeshStandardMaterial({color:h.color,metalness:.25,roughness:.65}));body.position.y=1.05;body.castShadow=true;g.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.32,12,8),new THREE.MeshStandardMaterial({color:0xe7c9ae,roughness:.8}));head.position.y=1.95;head.castShadow=true;g.add(head);const ring=new THREE.Mesh(new THREE.TorusGeometry(.55,.055,8,24),new THREE.MeshBasicMaterial({color:h.color,transparent:true,opacity:.75}));ring.rotation.x=Math.PI/2;ring.position.y=.1;g.add(ring);const weapon=new THREE.Mesh(new THREE.BoxGeometry(hero==='ninja'?.15:.12,hero==='prodigy'?0.12:.12,hero==='ninja'?1.6:.5),new THREE.MeshBasicMaterial({color:h.color}));weapon.position.set(hero==='ninja'?0.7:0.55,1.0,0);weapon.rotation.z=hero==='ninja'?-.55:0;g.add(weapon);return g}
 function makeEnemy(){const g=new THREE.Group();const mat=new THREE.MeshStandardMaterial({color:0x0b0d12,emissive:0x30205c,emissiveIntensity:1.8,metalness:.55,roughness:.2,transparent:true,opacity:.96});const core=new THREE.Mesh(new THREE.IcosahedronGeometry(.85,0),mat);core.scale.set(.7,1.35,.7);core.rotation.z=.4;core.castShadow=true;g.add(core);const ring=new THREE.Mesh(new THREE.TorusGeometry(.8,.045,6,18),new THREE.MeshBasicMaterial({color:0xa98cff,transparent:true,opacity:.75}));ring.rotation.x=Math.PI/2;g.add(ring);return g}
@@ -205,6 +206,7 @@ function makeBoss(){
 }
 function clearWorld(){for(const m of actors.values())scene.remove(m);for(const m of enemies.values())scene.remove(m);if(bossMesh)scene.remove(bossMesh);actors.clear();enemies.clear();bossMesh=null}
 function syncWorld(s){
+  if(!threeReady||!scene)return false;
   const ps=s.players||{};
   for(const [id,m] of actors){if(!ps[id]){scene.remove(m);actors.delete(id)}}
   Object.values(ps).forEach(p=>{let m=actors.get(p.id);if(!m){m=makeActor(p.hero);actors.set(p.id,m);scene.add(m)}m.position.lerp(new THREE.Vector3(p.x,0,p.z),.6);m.rotation.y=p.yaw||0;m.scale.y=p.downed?.58:1;m.children[2].material.opacity=p.downed?.12:.8});
@@ -398,7 +400,7 @@ function sendInput(){
 setInterval(sendInput,50);
 function showGameUI(){ui.heroSelect.style.display='none';ui.hud.style.display='block';ui.mobile.style.display='block';state.started=true}
 function render(s){
-  if(!s)return;syncWorld(s);const me=s.players?.[state.selfId];if(me){ui.freqText.textContent=me.frequency;const h=HEROES[me.hero];$('primaryName').textContent=h.primary;$('secondaryName').textContent=h.secondary;$('signatureName').textContent=h.signature}
+  if(!s||!threeReady||!scene)return;syncWorld(s);const me=s.players?.[state.selfId];if(me){ui.freqText.textContent=me.frequency;const h=HEROES[me.hero];$('primaryName').textContent=h.primary;$('secondaryName').textContent=h.secondary;$('signatureName').textContent=h.signature}
   ui.stabilityFill.style.width=Math.round(s.stability*100)+'%';ui.stabilityText.textContent=s.stability>.7?'STABLE':s.stability>.4?'FLICKERING':'COLLAPSE IMMINENT';ui.multText.textContent='×'+s.multiplier;ui.heatText.textContent='HEAT '+Math.round(s.heat*100)+'%';
   ui.party.innerHTML=Object.values(s.players||{}).map(p=>'<div class="partyRow"><span class="partyDot '+(p.downed?'down':'live')+'"></span><span>'+esc(p.name)+' <span class="mini">'+HEROES[p.hero].label+(p.bot?' · AI':'')+(p.pendingBot?' · RECONNECTING':'')+'</span></span><span class="mini">'+Math.ceil(Math.max(0,p.hp))+'/'+p.maxHp+'</span></div>').join('');
   const names={shards:'1 / 3 · SHARD WAVES',puzzle:'2 / 3 · RESONANCE LOCK',boss:'3 / 3 · GRAVITY ARBITER',complete:'COMPLETE',failed:'FAILED',lobby:'LOBBY'};phaseEl.textContent=names[s.phase]||s.phase.toUpperCase();timeEl.textContent=fmt(s.elapsed);scoreEl.textContent=Math.floor(s.score||0).toLocaleString();
@@ -424,7 +426,7 @@ setInterval(()=>{if(state.role!=='host'||!HOST.state)return;for(const p of Objec
 
 setInterval(()=>{if(state.role!=='host'||!HOST.state.started)return;const t=clockNow(),dt=Math.min(.06,t-lastTick);lastTick=t;tick(dt);if(Math.floor(HOST.state.elapsed*10)%5===0)broadcast();else state.hostState=compact();render(state.hostState)},50);
 
-setInterval(()=>{const s=state.hostState||HOST.state,me=s?.players?.[state.selfId];if(!me)return;const target=new THREE.Vector3(me.x,2.45,me.z),behind=new THREE.Vector3(Math.sin(me.yaw)*7,4.3,Math.cos(me.yaw)*7);camera.position.lerp(target.clone().add(behind),.16);camera.lookAt(target)},30);
+setInterval(()=>{if(!threeReady||!camera)return;const s=state.hostState||HOST.state,me=s?.players?.[state.selfId];if(!me)return;const target=new THREE.Vector3(me.x,2.45,me.z),behind=new THREE.Vector3(Math.sin(me.yaw)*7,4.3,Math.cos(me.yaw)*7);camera.position.lerp(target.clone().add(behind),.16);camera.lookAt(target)},30);
 
 $('vvAgain').addEventListener('click',()=>{if(state.role==='host')resetRunKeepRoster()});
 $('vvLobby').addEventListener('click',()=>{if(state.role==='host'){hideEnd();ui.hud.style.display='none';ui.heroSelect.style.display='flex';renderSelect()}else location.reload()});
