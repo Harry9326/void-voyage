@@ -358,7 +358,7 @@ function tick(dt){
 function compact(){
   const s=HOST.state;return{phase:s.phase,started:s.started,elapsed:s.elapsed,stability:s.stability,score:s.score,multiplier:s.multiplier,heat:s.heat,kills:s.kills,revives:s.revives,timeBonus:s.timeBonus,objective:s.objective,message:s.message,wave:s.wave,waveTotal:s.waveTotal,plates:[...s.plates],plateIndex:s.plateIndex,plateCharge:s.plateCharge,over:s.over,result:s.result,players:Object.fromEntries(Object.values(s.players).map(p=>[p.id,{...p,input:undefined}])),enemies:Object.fromEntries(Object.values(s.enemies).map(e=>[e.id,{...e}])),boss:s.boss?{...s.boss}:null}}
 function send(c,m){try{if(c?.open)c.send(m)}catch(e){}}
-function broadcast(){const s=compact();state.hostState=s;for(const c of Object.values(HOST.conns||{}))send(c,{t:'state',s});render(s);if(ui.heroSelect.style.display==='flex'&&!s.started)renderSelect()}
+function broadcast(){const s=compact();state.hostState=s;for(const c of Object.values(HOST.conns||{}))send(c,{t:'state',s});render(s);if(s.started)showGameUI();if(s.over)updateEnd(s.result==='win'?'win':'lose',s);if(ui.heroSelect.style.display==='flex'&&!s.started)renderSelect()}
 function showGameEnd(kind){state.started=false;broadcast();updateEnd(kind,compact())}
 function resetRunKeepRoster(){const roster=Object.values(HOST.state.players).map(p=>({id:p.id,name:p.name.replace(/ AI$/,''),hero:p.hero,bot:p.bot}));clearWorld();HOST.state=freshState();HOST.conns=HOST.conns||{};for(const r of roster)addPlayer(r.id,r.name,r.hero,{bot:r.bot});HOST.state.players[state.selfId].ready=true;startRun()}
 
@@ -389,7 +389,7 @@ function renderSelect(){
   const roster=state.hostState?.players||HOST.state.players;ui.rosterCount.textContent=Object.keys(roster||{}).length+' / 4';ui.roomCode.textContent=state.room||'------';if(ui.heroRoomCode)ui.heroRoomCode.innerHTML='ROOM <strong>'+esc(state.room||'------')+'</strong>';ui.heroCards.innerHTML='';
   for(const k of HERO_KEYS){const h=HEROES[k],taken=Object.values(roster||{}).some(p=>p.id!==state.selfId&&p.hero===k);const d=document.createElement('div');d.className='card'+(state.selectedHero===k?' selected':'')+(taken?' taken':'');d.innerHTML='<div class="pickDot"></div><div class="heroAccent" style="color:'+h.accent+'">'+h.label+'</div><h3>'+h.role.split(' / ')[0]+'</h3><div class="role">'+h.role+'</div><div class="ability"><b>Primary</b> '+h.primary+'<br><b>Secondary</b> '+h.secondary+'<br><b>Signature</b> '+h.signature+'<br><b>Ultimate</b> '+h.ultimate+'</div>'+(taken?'<div class="mini" style="margin-top:7px;color:#ff8ea9">TAKEN</div>':'');if(!taken)d.addEventListener('click',()=>{state.selectedHero=k;renderSelect()});ui.heroCards.appendChild(d)}
 }
-ui.create.addEventListener('click',setupHost);ui.join.addEventListener('click',setupGuest);
+ui.create.addEventListener('pointerdown',e=>{e.preventDefault();setupHost()});ui.join.addEventListener('pointerdown',e=>{e.preventDefault();setupGuest()});
 ui.ready.addEventListener('click',()=>{if(state.role==='host'){const p=HOST.state.players[state.selfId];p.hero=state.selectedHero;p.ready=true;ui.heroStatus.textContent='Ready as '+HEROES[p.hero].label+'. Start the mission when ready.';ui.ready.textContent='START MISSION';ui.ready.onclick=startRun;broadcast()}else{send(hostConn,{t:'hero',hero:state.selectedHero});send(hostConn,{t:'ready',value:true});ui.heroStatus.textContent='Ready as '+HEROES[state.selectedHero].label+'. Waiting for host…'}});
 
 function sendInput(){
@@ -398,10 +398,10 @@ function sendInput(){
   else {const p=HOST.state.players[state.selfId];if(!p)return;p.input=Object.assign(p.input||{},state.localInput);p.yaw=state.localInput.yaw;for(const a of['secondary','signature','ultimate','relay','tune','revive'])state.localInput[a]=false}
 }
 setInterval(sendInput,50);
-function showGameUI(){ui.heroSelect.style.display='none';ui.hud.style.display='block';ui.mobile.style.display='block';state.started=true}
+function showGameUI(){ui.heroSelect.style.display='none';ui.hud.style.display='block';ui.mobile.style.display='block';state.started=true;ui.roomHudCode.textContent=state.room||'------';if(state.hostState)timeEl.textContent=fmt(state.hostState.elapsed||0);hideEnd()}
 function render(s){
   if(!s||!threeReady||!scene)return;syncWorld(s);const me=s.players?.[state.selfId];if(me){ui.freqText.textContent=me.frequency;const h=HEROES[me.hero];$('primaryName').textContent=h.primary;$('secondaryName').textContent=h.secondary;$('signatureName').textContent=h.signature}
-  ui.stabilityFill.style.width=Math.round(s.stability*100)+'%';ui.stabilityText.textContent=s.stability>.7?'STABLE':s.stability>.4?'FLICKERING':'COLLAPSE IMMINENT';ui.multText.textContent='×'+s.multiplier;ui.heatText.textContent='HEAT '+Math.round(s.heat*100)+'%';
+  ui.roomHudCode.textContent=state.room||'------';ui.stabilityFill.style.width=Math.round(s.stability*100)+'%';ui.stabilityText.textContent=s.stability>.7?'STABLE':s.stability>.4?'FLICKERING':'COLLAPSE IMMINENT';ui.multText.textContent='×'+s.multiplier;ui.heatText.textContent='HEAT '+Math.round(s.heat*100)+'%';
   ui.party.innerHTML=Object.values(s.players||{}).map(p=>'<div class="partyRow"><span class="partyDot '+(p.downed?'down':'live')+'"></span><span>'+esc(p.name)+' <span class="mini">'+HEROES[p.hero].label+(p.bot?' · AI':'')+(p.pendingBot?' · RECONNECTING':'')+'</span></span><span class="mini">'+Math.ceil(Math.max(0,p.hp))+'/'+p.maxHp+'</span></div>').join('');
   const names={shards:'1 / 3 · SHARD WAVES',puzzle:'2 / 3 · RESONANCE LOCK',boss:'3 / 3 · GRAVITY ARBITER',complete:'COMPLETE',failed:'FAILED',lobby:'LOBBY'};phaseEl.textContent=names[s.phase]||s.phase.toUpperCase();timeEl.textContent=fmt(s.elapsed);scoreEl.textContent=Math.floor(s.score||0).toLocaleString();
   ui.objectiveText.textContent=s.objective||s.message||'';ui.objectiveTitle.textContent=s.phase==='shards'?'THE SNOWY RIDGE':s.phase==='puzzle'?'RESONANCE LOCK':s.phase==='boss'?'GRAVITY ARBITER':'VOID VOYAGE';ui.boss.style.display=s.phase==='boss'?'block':'none';
