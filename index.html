@@ -142,7 +142,8 @@ const crack=new THREE.Mesh(new THREE.BoxGeometry(.22,.035,30),new THREE.MeshBasi
 const count=snowCount,arr=new Float32Array(count*3),vel=[];for(let i=0;i<count;i++){arr[i*3]=(Math.random()-.5)*110;arr[i*3+1]=Math.random()*38;arr[i*3+2]=(Math.random()-.5)*100;vel.push(.5+Math.random()*1.6)}const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.BufferAttribute(arr,3));const sm=new THREE.Points(sg,new THREE.PointsMaterial({color:0xe2edff,size:lowPerf?.055:.07,transparent:true,opacity:.62,depthWrite:false}));sm.userData.snowVel=vel;sm.name='snowfall';scene.add(sm);
 const mist=new THREE.Mesh(new THREE.PlaneGeometry(120,70),new THREE.MeshBasicMaterial({color:0x8a8ab9,transparent:true,opacity:.055,depthWrite:false}));mist.rotation.x=-Math.PI/2;mist.position.y=.15;scene.add(mist);
 composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));bloomPass=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),lowPerf?.25:.6,.35,.85);composer.addPass(bloomPass);composer.addPass(new OutputPass());clock=new THREE.Clock();window.addEventListener('resize',onResize);animate();return true}
-const threeReady=init3D();
+// v9.1: initialize only after all render state (including actors) is declared.
+
 function onResize(){if(!renderer)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,lowPerf?1:1.5));if(composer)composer.setSize(innerWidth,innerHeight);if(bloomPass)bloomPass.resolution.set(innerWidth,innerHeight)}
 const heroSpecs={ninja:{skin:0xc99e87,cloth:0x121a2b,accent:0x438eff},prodigy:{skin:0xc99879,cloth:0x101d25,accent:0x19e4f2},doctor:{skin:0xe0b79d,cloth:0x11131b,accent:0xffb94f},sage:{skin:0xb98e76,cloth:0x101c1a,accent:0x52ffc0}};
 function mat(color,metalness=.25,roughness=.55,emissive=0,ei=0){return new THREE.MeshStandardMaterial({color,metalness,roughness,emissive,emissiveIntensity:ei})}
@@ -428,6 +429,7 @@ $('vvAgain').addEventListener('click',()=>{if(state.role==='host')resetRunKeepRo
 $('vvLobby').addEventListener('click',()=>{if(state.role==='host'){hideEnd();ui.hud.style.display='none';ui.heroSelect.style.display='flex';renderSelect()}else location.reload()});
 
 setStatus('Core-loop slice loaded. Create or join a room.');
+const threeReady=init3D();
 })();
 </script>
 </body>
